@@ -1,35 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <meta name="theme-color" content="#15A24A" />
-  <title>Brik — materials, verified, delivered</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Briq — materials, verified, delivered</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#009c41">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Briq">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Varela+Round&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="bk">
-    <div class="app">
-      <div class="top">
-        <div class="topin">
-          <div class="logo">Bri<b>k</b></div>
-          <div class="loc"><i></i>Jinja</div>
-        </div>
-      </div>
-      <main id="view"></main>
-      <div id="cartbar"></div>
-      <nav class="tabs" id="tabs"></nav>
-      <div id="sheet"></div>
-    </div>
-  </div>
+<div class="app-shell">
 
-  <script src="config.js"></script>
-  <script src="app.js"></script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
-    }
-  </script>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <span class="logo-dots"><span style="background:#009c41"></span><span style="background:#3b82f6"></span><span style="background:#e8a53a"></span></span>
+      <span class="logo-name">Bri<em>q</em></span>
+    </div>
+    <div class="sb-user">
+      <div class="sb-avatar"><svg viewBox="0 0 24 24"><path d="M3 21l9-16 9 16z"/><path d="M8 21l4-7 4 7"/></svg></div>
+      <div><div class="sb-user-name">Briq</div><div class="sb-user-role">Jinja, Uganda</div></div>
+    </div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sidebar-panel" id="projPanel"></div>
+    <div class="sb-bottom"><div class="sb-bottom-text"><strong>Engineer-verified</strong> materials, sourced, checked and delivered to your site.</div></div>
+  </aside>
+  <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-l">
+        <button class="mob-sidebar-btn" onclick="openSidebar()" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <div><div class="topbar-title" id="tbTitle">Order materials</div><div class="topbar-sub" id="tbSub">Briq · Jinja</div></div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-green cart-top" id="cartTop" onclick="openReview()" style="display:none"></button>
+      </div>
+    </header>
+
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<!-- MOBILE STICKY CART -->
+<div class="cart-bar" id="cartBar"></div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav"></nav>
+
+<!-- REVIEW MODAL -->
+<div class="modal-bg" id="reviewModal"><div class="modal-card" id="reviewCard"></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 </body>
 </html>
