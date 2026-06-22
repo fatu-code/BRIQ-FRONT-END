@@ -70,7 +70,7 @@ function I(name, s = 16) {
     cart:'<path d="M4 5h2l2 11h9l2-7H7"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/>',
     box:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/>',
   };
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}">${P[name]||""}</svg>`;
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" aria-hidden="true" focusable="false">${P[name]||""}</svg>`;
 }
 
 const lines = () => Object.entries(S.cart).map(([id,q]) => { const m=M(id); return m?{...m,qty:q,lt:m.brik*q,ls:m.save*q}:null; }).filter(Boolean);
@@ -82,13 +82,23 @@ const count = () => lines().reduce((s,l)=>s+l.qty,0);
 function setQty(id,q){ q=Math.max(0,Math.floor(q||0)); if(q===0)delete S.cart[id]; else S.cart[id]=q; render(); }
 function bump(id,d){ setQty(id,(S.cart[id]||0)+d); }
 function addPack(pid){ const p=S.packs.find(x=>x.id===pid); if(!p)return; for(const[id,q]of Object.entries(p.items))S.cart[id]=(S.cart[id]||0)+q; toast(`${p.name} pack added`); render(); }
-function go(v){ S.view=v; closeSidebar(); window.scrollTo(0,0); render(); }
-function setSlot(s){ S.slot=s; renderModal(); }
+function go(v){ S.view=v; closeSidebar(); window.scrollTo(0,0); render(); const c=$("content"); c.classList.remove("enter"); void c.offsetWidth; c.classList.add("enter"); }
+function setSlot(s){ S.slot=s; renderModal(); const b=[...$("reviewCard").querySelectorAll(".slot")].find(x=>x.textContent===s); if(b)b.focus(); }
 function toggleAdd(){ S.adding=!S.adding; render(); }
-function openSidebar(){ $("sidebar").classList.add("open"); $("overlay").classList.add("show"); }
-function closeSidebar(){ $("sidebar").classList.remove("open"); $("overlay").classList.remove("show"); }
-function openReview(){ if(count()===0)return; renderModal(); $("reviewModal").classList.add("open"); }
-function closeReview(){ $("reviewModal").classList.remove("open"); }
+function openSidebar(){ $("sidebar").classList.add("open"); $("overlay").classList.add("show"); document.querySelector(".mob-sidebar-btn").setAttribute("aria-expanded","true"); }
+function closeSidebar(){ $("sidebar").classList.remove("open"); $("overlay").classList.remove("show"); document.querySelector(".mob-sidebar-btn").setAttribute("aria-expanded","false"); }
+let _lastFocus=null;
+function openReview(){ if(count()===0)return; _lastFocus=document.activeElement; renderModal(); $("reviewModal").classList.add("open"); document.addEventListener("keydown",modalKey); setTimeout(()=>{ const f=$("reviewCard").querySelector(".modal-close"); if(f)f.focus(); },60); }
+function closeReview(){ $("reviewModal").classList.remove("open"); document.removeEventListener("keydown",modalKey); if(_lastFocus&&_lastFocus.focus)_lastFocus.focus(); }
+function modalKey(e){
+  if(e.key==="Escape"){ closeReview(); return; }
+  if(e.key!=="Tab")return;
+  const f=$("reviewCard").querySelectorAll('button,[href],input,select,[tabindex]:not([tabindex="-1"])');
+  if(!f.length)return;
+  const first=f[0], last=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
+}
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2400); }
 
 async function createProject(){
@@ -117,6 +127,7 @@ function reorder(id){ const o=S.orders.find(x=>x.id===id); if(!o)return; S.cart=
 
 async function loadOrders(){ try{ const r=await api("/api/orders"); S.orders=r.orders; }catch(e){} }
 async function boot(){
+  S.loading=true; render();
   try{
     const [m,p]=await Promise.all([api("/api/materials"),api("/api/packs")]);
     S.materials=m.materials; S.packs=p.packs;
@@ -126,6 +137,9 @@ async function boot(){
   S.loading=false; render();
 }
 
+window.addEventListener("online",()=>{ if(S.offline){ S.offline=false; toast("Back online"); boot(); } });
+window.addEventListener("offline",()=>{ S.offline=true; toast("You're offline — showing saved data"); render(); });
+
 /* ── RENDER ── */
 function render(){
   // topbar
@@ -133,35 +147,50 @@ function render(){
   $("tbSub").textContent = S.offline ? "Briq · Jinja · sample data" : "Briq · Jinja";
   // cart top button (desktop)
   const ct=$("cartTop");
-  if(count()>0){ ct.style.display="inline-flex"; ct.innerHTML=`${I("cart",14)} ${fmt(grand())} · ${count()}`; }
+  if(count()>0){ ct.style.display="inline-flex"; ct.setAttribute("aria-label",`Review order, ${count()} item${count()>1?"s":""}, total ${fmt(grand())}`); ct.innerHTML=`${I("cart",14)} ${fmt(grand())} · ${count()}`; }
   else ct.style.display="none";
   // sidebar nav
   $("sbNav").innerHTML = `<div class="nav-section">Browse</div>` + Object.keys(VIEWS).map(v=>{
+    const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
     const badge = (v==="materials"&&count()>0)?`<span class="nav-badge">${count()}</span>`:(v==="orders"&&S.orders.length?`<span class="nav-badge">${S.orders.length}</span>`:"");
-    return `<button class="nav-item ${S.view===v?"active":""}" onclick="go('${v}')"><span class="nav-icon">${I(VIEWS[v].icon,14)}</span><span class="nav-label">${VIEWS[v].title}</span>${badge}</button>`;
+    const lbl = cnt>0?` aria-label="${VIEWS[v].title}, ${cnt}"`:"";
+    return `<button class="nav-item ${S.view===v?"active":""}"${S.view===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="nav-icon">${I(VIEWS[v].icon,14)}</span><span class="nav-label">${VIEWS[v].title}</span>${badge}</button>`;
   }).join("");
   // project panel
   renderProjectPanel();
   // bottom nav
   $("bottomNav").innerHTML = `<div class="bn-row">` + Object.keys(VIEWS).map(v=>{
+    const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
     const badge=(v==="materials"&&count()>0)?`<span class="bn-badge">${count()}</span>`:"";
-    return `<button class="bn-item ${S.view===v?"on":""}" onclick="go('${v}')"><span class="bi">${I(VIEWS[v].icon,21)}${badge}</span>${VIEWS[v].title}</button>`;
+    const lbl = cnt>0?` aria-label="${VIEWS[v].title}, ${cnt}"`:"";
+    return `<button class="bn-item ${S.view===v?"on":""}"${S.view===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="bi">${I(VIEWS[v].icon,21)}${badge}</span>${VIEWS[v].title}</button>`;
   }).join("") + `</div>`;
   // cart bar (mobile)
-  $("cartBar").innerHTML = count()>0 ? `<div class="in" onclick="openReview()"><div class="c1"><b>${fmt(grand())}</b><span>${count()} item${count()>1?"s":""} · save ${fmt(saveTot())}</span></div><div class="go">Review ${I("check",15)}</div></div>` : "";
+  $("cartBar").innerHTML = count()>0 ? `<button class="in" onclick="openReview()" aria-label="Review order, ${count()} item${count()>1?"s":""}, total ${fmt(grand())}"><div class="c1"><b>${fmt(grand())}</b><span>${count()} item${count()>1?"s":""} · save ${fmt(saveTot())}</span></div><div class="go">Review ${I("check",15)}</div></button>` : "";
   // content
   const c=$("content");
-  if(S.view==="materials") c.innerHTML=viewMaterials();
+  c.setAttribute("aria-busy", S.loading?"true":"false");
+  if(S.loading&&S.view==="materials") c.innerHTML=viewSkeleton();
+  else if(S.view==="materials") c.innerHTML=viewMaterials();
   else if(S.view==="orders") c.innerHTML=viewOrders();
   else c.innerHTML=viewWhy();
 }
 
+function viewSkeleton(){
+  const packs=Array.from({length:4},()=>`<div class="skel sk-pack"></div>`).join("");
+  const card=(n)=>`<div class="card"><div class="card-head"><div class="card-title"><span class="skel sk-ic" style="width:28px;height:28px;border-radius:8px"></span><span class="skel sk-line" style="width:90px"></span></div></div>${
+    Array.from({length:n},()=>`<div class="sk-row"><span class="skel sk-ic"></span><div style="flex:1"><div class="skel sk-line" style="width:55%;margin-bottom:8px"></div><div class="skel sk-line" style="width:35%"></div></div><span class="skel" style="width:38px;height:38px;border-radius:11px"></span></div>`).join("")
+  }</div>`;
+  return `<div class="info-banner" style="opacity:.6">${I("shield",17)}<div class="info-banner-text">Loading materials…</div></div>
+    <div class="pack-rail" aria-hidden="true">${packs}</div>${card(3)}${card(2)}`;
+}
+
 function renderProjectPanel(){
   const sel = S.projects.length
-    ? `<select class="psel" onchange="S.active=this.value">${S.projects.map(p=>`<option value="${p.id}" ${p.id===S.active?"selected":""}>${p.name}</option>`).join("")}</select>`
+    ? `<select class="psel" aria-label="Active project" onchange="S.active=this.value">${S.projects.map(p=>`<option value="${p.id}" ${p.id===S.active?"selected":""}>${p.name}</option>`).join("")}</select>`
     : `<div class="panel-note">No project yet. Add one to group your orders by site.</div>`;
   const form = S.adding
-    ? `<div class="pform"><input id="npName" placeholder="Project name (e.g. Wanyange duplex)"><input id="npSite" placeholder="Site (e.g. Plot 14, Wanyange)"><button class="btn btn-green btn-sm" onclick="createProject()">Save project</button></div>` : "";
+    ? `<div class="pform"><input id="npName" aria-label="Project name" placeholder="Project name (e.g. Wanyange duplex)"><input id="npSite" aria-label="Site location" placeholder="Site (e.g. Plot 14, Wanyange)"><button class="btn btn-green btn-sm" onclick="createProject()">Save project</button></div>` : "";
   $("projPanel").innerHTML = `<div class="panel-title">Project</div>${sel}<button class="btn btn-sm" style="width:100%;justify-content:center" onclick="toggleAdd()">${S.adding?"Cancel":"+ New project"}</button>${form}`;
 }
 
@@ -175,16 +204,16 @@ function viewMaterials(){
       const q=S.cart[m.id]||0;
       const ctrl = q===0
         ? `<button class="add-btn" onclick="bump('${m.id}',1)" aria-label="Add ${m.name}">${I("plus",17)}</button>`
-        : `<div class="qbox"><button onclick="bump('${m.id}',-1)">${I("minus",15)}</button><input value="${q}" inputmode="numeric" onchange="setQty('${m.id}',parseInt(this.value.replace(/\\D/g,''))||0)"><button onclick="bump('${m.id}',1)">${I("plus",15)}</button></div>`;
+        : `<div class="qbox" role="group" aria-label="Quantity, ${m.name}"><button onclick="bump('${m.id}',-1)" aria-label="Remove one ${m.name}">${I("minus",15)}</button><input value="${q}" inputmode="numeric" aria-label="${m.name} quantity" onchange="setQty('${m.id}',parseInt(this.value.replace(/\\D/g,''))||0)"><button onclick="bump('${m.id}',1)" aria-label="Add one ${m.name}">${I("plus",15)}</button></div>`;
       return `<div class="mrow"><div class="m-icon ${ACC[g]}">${I(GICON[g],18)}</div>
         <div class="m-info"><div class="m-name">${m.name} ${m.verified?`<span class="pill pill-green">${I("check",11)}Verified</span>`:""}</div>
         <div class="m-spec">${m.spec}</div>
         <div class="m-price"><b>${fmt(m.brik)}</b> / ${m.unit} <span class="m-save">save ${sh(m.save)}</span></div></div>${ctrl}</div>`;
     }).join("");
-    return `<div class="card"><div class="card-head"><div class="card-title"><span class="ci m-icon ${ACC[g]}" style="width:28px;height:28px">${I(GICON[g],15)}</span>${g}</div></div>${rows}</div>`;
+    return `<div class="card"><div class="card-head"><h2 class="card-title"><span class="ci m-icon ${ACC[g]}" style="width:28px;height:28px">${I(GICON[g],15)}</span>${g}</h2></div>${rows}</div>`;
   }).join("");
   return `${S.offline?`<div class="info-banner">${I("box",17)}<div class="info-banner-text">Showing sample data — backend not reachable right now.</div></div>`:`<div class="info-banner">${I("shield",17)}<div class="info-banner-text">Engineer-verified materials, priced openly, delivered to site. Pay on delivery.</div></div>`}
-    <div class="card-title" style="margin:4px 2px 12px">Quick packs</div>
+    <h2 class="card-title" style="margin:4px 2px 12px">Quick packs</h2>
     <div class="pack-rail">${packs}</div>
     ${groups}`;
 }
@@ -205,7 +234,7 @@ function viewOrders(){
   }).join("");
   return `<div class="member-hero"><div class="hero-lbl">Saved with Briq</div><div class="hero-val">${fmt(cum)}</div><div class="hero-note">vs buying at retail, across ${S.orders.length} order${S.orders.length>1?"s":""}</div>
     <div class="hero-stats"><div class="hero-stat"><div class="hero-stat-val">${S.orders.length}</div><div class="hero-stat-lbl">Orders</div></div><div class="hero-stat"><div class="hero-stat-val">${moved}</div><div class="hero-stat-lbl">Items moved</div></div></div></div>
-    <div class="card-title" style="margin:2px 2px 12px">Recent orders</div>${cards}`;
+    <h2 class="card-title" style="margin:2px 2px 12px">Recent orders</h2>${cards}`;
 }
 
 function viewWhy(){
@@ -219,14 +248,14 @@ function viewWhy(){
 
 function renderModal(){
   const ls=lines().map(l=>`<div class="line"><div><div class="ln">${l.name}</div><div class="lq">${l.qty} × ${fmt(l.brik)} / ${l.unit}</div></div><div class="lp">${fmt(l.lt)}</div></div>`).join("");
-  const slots=SLOTS.map(s=>`<button class="slot ${S.slot===s?"on":""}" onclick="setSlot('${s}')">${s}</button>`).join("");
+  const slots=SLOTS.map(s=>`<button class="slot ${S.slot===s?"on":""}" role="radio" aria-checked="${S.slot===s}" onclick="setSlot('${s}')">${s}</button>`).join("");
   const sv=saveTot()>0?`<div class="tot sv"><span>You save vs retail</span><span>${fmt(saveTot())}</span></div>`:"";
-  $("reviewCard").innerHTML = `<div class="modal-head"><div class="modal-title">Review order</div><button class="modal-close" onclick="closeReview()">×</button></div>
+  $("reviewCard").innerHTML = `<div class="modal-head"><div class="modal-title" id="reviewTitle">Review order</div><button class="modal-close" onclick="closeReview()" aria-label="Close review">×</button></div>
     <div class="modal-body">${ls}
       <div style="margin-top:8px"><div class="tot"><span>Supplier cost</span><span>${fmt(supTot())}</span></div>
       <div class="tot"><span>Briq fee (${Math.round(FEE*100)}%)</span><span>${fmt(grand()-supTot())}</span></div>${sv}
       <div class="tot grand"><span>Total</span><span>${fmt(grand())}</span></div></div>
-      <div class="form-label" style="margin:18px 0 9px">Delivery slot</div><div class="slot-grid">${slots}</div>
+      <div class="form-label" style="margin:18px 0 9px">Delivery slot</div><div class="slot-grid" role="radiogroup" aria-label="Delivery slot">${slots}</div>
       <button class="btn btn-green btn-block" style="margin-top:18px" onclick="placeOrder()">Place order</button>
       <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:12px">No deposit · pay on delivery · wrong spec replaced free</p></div>`;
 }

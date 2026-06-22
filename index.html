@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>Briq — materials, verified, delivered</title>
+<meta name="description" content="Order engineer-verified construction materials — cement, steel, blocks, aggregates, roofing — sourced, quality-checked and delivered to your site in Uganda. Transparent pricing, pay on delivery.">
+<meta property="og:title" content="Briq — materials, verified, delivered">
+<meta property="og:description" content="Engineer-verified construction materials, sourced, checked and delivered to site. Transparent pricing, pay on delivery.">
+<meta property="og:type" content="website">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23009c41'/%3E%3Cpath d='M16 6l8 14H8z' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#009c41">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,6 +20,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a class="skip-link" href="#content">Skip to materials</a>
 <div class="app-shell">
 
   <!-- SIDEBAR -->
@@ -37,15 +43,15 @@
   <div class="main-area">
     <header class="topbar">
       <div class="topbar-l">
-        <button class="mob-sidebar-btn" onclick="openSidebar()" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
-        <div><div class="topbar-title" id="tbTitle">Order materials</div><div class="topbar-sub" id="tbSub">Briq · Jinja</div></div>
+        <button class="mob-sidebar-btn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <div><h1 class="topbar-title" id="tbTitle">Order materials</h1><div class="topbar-sub" id="tbSub">Briq · Jinja</div></div>
       </div>
       <div class="topbar-right">
         <button class="btn btn-green cart-top" id="cartTop" onclick="openReview()" style="display:none"></button>
       </div>
     </header>
 
-    <main class="content" id="content"></main>
+    <main class="content" id="content" tabindex="-1"></main>
   </div>
 </div>
 
@@ -56,9 +62,11 @@
 <nav class="bottom-nav" id="bottomNav"></nav>
 
 <!-- REVIEW MODAL -->
-<div class="modal-bg" id="reviewModal"><div class="modal-card" id="reviewCard"></div></div>
+<div class="modal-bg" id="reviewModal" onclick="if(event.target===this)closeReview()"><div class="modal-card" id="reviewCard" role="dialog" aria-modal="true" aria-labelledby="reviewTitle"></div></div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript><div style="max-width:520px;margin:64px auto;padding:0 24px;font-family:Nunito,sans-serif;text-align:center;color:#1a2e22"><h1 style="color:#009c41">Briq</h1><p>Briq needs JavaScript to order materials. Please enable it, or call us to place your order.</p></div></noscript>
 
 <script src="config.js"></script>
 <script src="app.js"></script>
