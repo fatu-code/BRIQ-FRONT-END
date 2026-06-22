@@ -42,7 +42,10 @@ const FB_PACKS = [
 let clientId = localStorage.getItem("briq-client");
 if (!clientId) { clientId = "c" + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("briq-client", clientId); }
 
-const S = { view:"materials", cart:{}, materials:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:GROUPS[0], query:"" };
+const S = { view:"materials", cart:{}, materials:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:"all", query:"", _lc:0 };
+const IMGBAD = new Set();
+function imgFail(id,el){ IMGBAD.add(id); if(el)el.remove(); }
+function pulse(el){ if(!el)return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
 
 const fmt = (n) => "UGX " + Math.round(n).toLocaleString("en-UG");
 const sh = (n) => Math.round(n).toLocaleString("en-UG");
@@ -81,7 +84,13 @@ const grand = () => lines().reduce((s,l)=>s+l.lt,0);
 const saveTot = () => lines().reduce((s,l)=>s+l.ls,0);
 const count = () => lines().reduce((s,l)=>s+l.qty,0);
 
-function setQty(id,q){ q=Math.max(0,Math.floor(q||0)); if(q===0)delete S.cart[id]; else S.cart[id]=q; render(); }
+function setQty(id,q){
+  q=Math.max(0,Math.floor(q||0));
+  if(q===0)delete S.cart[id]; else S.cart[id]=q;
+  const el=$("pc-"+id), cw=$("ctrl-"+id), m=M(id);
+  if(S.view==="materials" && !S.loading && el && cw && m){ el.classList.toggle("on",(S.cart[id]||0)>0); cw.innerHTML=ctrlHTML(m); renderChrome(); }
+  else render();
+}
 function bump(id,d){ setQty(id,(S.cart[id]||0)+d); }
 function addPack(pid){ const p=S.packs.find(x=>x.id===pid); if(!p)return; for(const[id,q]of Object.entries(p.items))S.cart[id]=(S.cart[id]||0)+q; toast(`${p.name} pack added`); render(); }
 function go(v){ S.view=v; closeSidebar(); window.scrollTo(0,0); render(); const c=$("content"); c.classList.remove("enter"); void c.offsetWidth; c.classList.add("enter"); }
@@ -147,7 +156,7 @@ window.addEventListener("online",()=>{ if(S.offline){ S.offline=false; toast("Ba
 window.addEventListener("offline",()=>{ S.offline=true; toast("You're offline — showing saved data"); render(); });
 
 /* ── RENDER ── */
-function render(){
+function renderChrome(){
   // topbar
   $("tbTitle").textContent = VIEWS[S.view].title;
   $("tbSub").textContent = S.offline ? "Briq · Jinja · sample data" : "Briq · Jinja";
@@ -162,8 +171,6 @@ function render(){
     const lbl = cnt>0?` aria-label="${VIEWS[v].title}, ${cnt}"`:"";
     return `<button class="nav-item ${S.view===v?"active":""}"${S.view===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="nav-icon">${I(VIEWS[v].icon,14)}</span><span class="nav-label">${VIEWS[v].title}</span>${badge}</button>`;
   }).join("");
-  // project panel
-  renderProjectPanel();
   // bottom nav
   $("bottomNav").innerHTML = `<div class="bn-row">` + Object.keys(VIEWS).map(v=>{
     const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
@@ -173,6 +180,14 @@ function render(){
   }).join("") + `</div>`;
   // cart bar (mobile)
   $("cartBar").innerHTML = count()>0 ? `<button class="in" onclick="openReview()" aria-label="Review order, ${count()} item${count()>1?"s":""}, total ${fmt(grand())}"><div class="c1"><b>${fmt(grand())}</b><span>${count()} item${count()>1?"s":""} · save ${fmt(saveTot())}</span></div><div class="go">Review ${I("check",15)}</div></button>` : "";
+  // light motion when the cart total grows
+  const cNow=count();
+  if(cNow>S._lc){ pulse($("cartTop")); pulse($("cartBar").firstElementChild); }
+  S._lc=cNow;
+}
+function render(){
+  renderChrome();
+  renderProjectPanel();
   // content
   const c=$("content");
   c.setAttribute("aria-busy", S.loading?"true":"false");
@@ -184,11 +199,10 @@ function render(){
 
 function viewSkeleton(){
   const packs=Array.from({length:4},()=>`<div class="skel sk-pack"></div>`).join("");
-  const cards=Array.from({length:6},()=>`<div class="pcard"><div class="pcard-top"><span class="skel sk-ic"></span></div><div class="skel sk-line" style="width:72%;height:13px"></div><div class="skel sk-line" style="width:46%;margin-top:9px"></div><div class="pcard-foot"><div style="flex:1"><div class="skel sk-line" style="width:58%;height:15px"></div></div><span class="skel" style="width:40px;height:40px;border-radius:11px"></span></div></div>`).join("");
-  return `<div class="skel sk-line" style="width:260px;height:24px;margin-bottom:16px"></div>
-    <div class="skel" style="height:50px;border-radius:11px;margin-bottom:18px"></div>
-    <div class="pack-rail" aria-hidden="true">${packs}</div>
-    <div class="mgrid" style="margin-top:20px">${cards}</div>`;
+  const cards=Array.from({length:6},()=>`<div class="sk-card"><div class="skel sk-img"></div><div class="sk-body"><div class="skel sk-line" style="width:70%;height:13px"></div><div class="skel sk-line" style="width:45%;margin-top:9px"></div><div class="skel sk-line" style="width:40%;height:18px;margin-top:13px"></div><div class="skel sk-line" style="width:100%;height:42px;border-radius:12px;margin-top:14px"></div></div></div>`).join("");
+  return `<div class="skel" style="height:48px;border-radius:12px;margin-bottom:18px"></div>
+    <div class="packstrip" aria-hidden="true" style="margin-bottom:22px">${packs}</div>
+    <div class="mgrid">${cards}</div>`;
 }
 
 function renderProjectPanel(){
@@ -203,47 +217,59 @@ function renderProjectPanel(){
 function matFor(){
   const q=S.query.trim().toLowerCase();
   if(q) return S.materials.filter(m=>(m.name+" "+m.spec+" "+m.group).toLowerCase().includes(q));
+  if(S.cat==="all") return S.materials;
   return S.materials.filter(m=>m.group===S.cat);
+}
+function ctrlHTML(m){
+  const q=S.cart[m.id]||0;
+  return q===0
+    ? `<button class="add-order-btn" onclick="bump('${m.id}',1)" aria-label="Add ${m.name} to order">${I("plus",16)} Add to order</button>`
+    : `<div class="qstep" role="group" aria-label="Quantity, ${m.name}"><button onclick="bump('${m.id}',-1)" aria-label="Remove one ${m.name}">${I("minus",16)}</button><input value="${q}" inputmode="numeric" aria-label="${m.name} quantity" onchange="setQty('${m.id}',parseInt(this.value.replace(/\\D/g,''))||0)"><button onclick="bump('${m.id}',1)" aria-label="Add one ${m.name}">${I("plus",16)}</button></div>`;
 }
 function pcard(m){
   const g=m.group, q=S.cart[m.id]||0;
-  const ctrl = q===0
-    ? `<button class="add-btn" onclick="bump('${m.id}',1)" aria-label="Add ${m.name}">${I("plus",17)}</button>`
-    : `<div class="qbox" role="group" aria-label="Quantity, ${m.name}"><button onclick="bump('${m.id}',-1)" aria-label="Remove one ${m.name}">${I("minus",15)}</button><input value="${q}" inputmode="numeric" aria-label="${m.name} quantity" onchange="setQty('${m.id}',parseInt(this.value.replace(/\\D/g,''))||0)"><button onclick="bump('${m.id}',1)" aria-label="Add one ${m.name}">${I("plus",15)}</button></div>`;
-  return `<div class="pcard ${q>0?"on":""}">
-    <div class="pcard-top"><span class="m-icon ${ACC[g]}">${I(GICON[g],18)}</span>${m.verified?`<span class="pill pill-green">${I("check",11)}Verified</span>`:""}</div>
-    <div class="pcard-name">${m.name}</div><div class="pcard-spec">${m.spec}</div>
-    <div class="pcard-foot"><div class="pcard-price"><b>${fmt(m.brik)}</b> <span>/ ${m.unit}</span><div class="pcard-meta">supplier + ${Math.round(FEE*100)}% · <em>save ${sh(m.save)}</em></div></div>${ctrl}</div>
+  const img = IMGBAD.has(m.id) ? "" : `<img src="images/${m.id}.jpg" alt="${m.name}" loading="lazy" onerror="imgFail('${m.id}',this)">`;
+  const seal = m.verified ? `<span class="seal" role="img" aria-label="Engineer-verified" title="Engineer-verified">${I("check",13)}</span>` : "";
+  return `<div class="pcard ${q>0?"on":""}" id="pc-${m.id}">
+    <div class="pcard-img ${ACC[g]}"><span class="pcard-fallback" aria-hidden="true">${I(GICON[g],38)}</span>${img}${seal}</div>
+    <div class="pcard-body">
+      <div class="pcard-name">${m.name}</div>
+      <div class="pcard-spec">${m.spec}</div>
+      <div class="pcard-price"><b>${fmt(m.brik)}</b><span class="pcard-unit">/ ${m.unit}</span><s>${sh(m.retail)}</s></div>
+      <div class="pcard-save">${I("tag",11)} Save ${sh(m.save)} vs retail</div>
+      <div class="pcard-ctrl" id="ctrl-${m.id}">${ctrlHTML(m)}</div>
+    </div>
   </div>`;
 }
 function catBar(){
   const searching=S.query.trim().length>0;
-  return GROUPS.map(g=>{
-    const n=S.materials.filter(m=>m.group===g).length;
+  const allOn=!searching && S.cat==="all";
+  let out=`<button class="cft ${allOn?"on":""}"${allOn?' aria-current="true"':""} onclick="setCat('all')">All</button>`;
+  out+=GROUPS.map(g=>{
     const on=!searching && S.cat===g;
-    return `<button class="cat-tab ${ACC[g]} ${on?"on":""}"${on?' aria-current="true"':""} onclick="setCat('${g}')"><span class="dot"></span>${g}<span class="ct-count">${n}</span></button>`;
+    return `<button class="cft ${ACC[g]} ${on?"on":""}"${on?' aria-current="true"':""} onclick="setCat('${g}')"><i></i>${g}</button>`;
   }).join("");
+  return out;
 }
 function gridSection(){
   const searching=S.query.trim().length>0;
   const list=matFor();
-  const head=`<div class="grid-head"><h2 class="card-title">${searching?"Results":S.cat}</h2>${searching?`<button class="link-btn" onclick="clearSearch()">Clear search</button>`:`<span class="grid-count">${list.length} item${list.length!==1?"s":""}</span>`}</div>`;
+  const title=searching?"Results":(S.cat==="all"?"All materials":S.cat);
+  const head=`<div class="grid-head"><h2 class="card-title">${title}</h2>${searching?`<button class="link-btn" onclick="clearSearch()">Clear search</button>`:`<span class="grid-count">${list.length} item${list.length!==1?"s":""}</span>`}</div>`;
   if(!list.length) return head+`<div class="card"><div class="empty-state"><div class="empty-icon">${I("search",24)}</div><div class="empty-title">No materials match “${S.query.trim()}”</div><div class="empty-sub">Try another term, or pick a category above.</div></div></div>`;
   return head+`<div class="mgrid">${list.map(pcard).join("")}</div>`;
 }
 function viewMaterials(){
   const packs = S.packs.map(p=>{
     const tot=Object.entries(p.items).reduce((s,[id,q])=>{const m=M(id);return s+(m?m.brik*q:0);},0);
-    return `<button class="pack" onclick="addPack('${p.id}')"><div class="pc">${I("spark",16)}</div><b>${p.name}</b><span>${p.note}</span><em>≈ ${fmt(tot)} · add</em></button>`;
+    return `<button class="packchip" onclick="addPack('${p.id}')" aria-label="Add ${p.name} pack, about ${fmt(tot)}">${I("spark",15)}<b>${p.name}</b><em>≈ ${fmt(tot)}</em></button>`;
   }).join("");
   const banner = S.offline ? `<div class="info-banner">${I("box",17)}<div class="info-banner-text">Showing sample data — backend not reachable right now.</div></div>` : "";
   return `${banner}
-    <div class="mlead">What does your site need today?</div>
-    <div class="search-wrap">${I("search",18)}<input id="mSearch" class="search-input" type="search" placeholder="Search cement, Y12, blocks, ballast…" aria-label="Search materials" autocomplete="off" oninput="setQuery(this.value)" value="${S.query.replace(/"/g,"&quot;")}"></div>
-    <div class="trust-ribbon"><span class="ti">${I("shield",15)}Engineer-verified</span><span class="ti">${I("tag",15)}Below retail</span><span class="ti">${I("truck",15)}Pay on delivery</span></div>
-    <h2 class="card-title" style="margin:8px 2px 12px">Quick packs</h2>
-    <div class="pack-rail">${packs}</div>
-    <div class="catbar" id="catBar">${catBar()}</div>
+    <div class="search-wrap">${I("search",18)}<input id="mSearch" class="search-input" type="search" placeholder="Search materials — cement, Y12, blocks, ballast…" aria-label="Search materials" autocomplete="off" oninput="setQuery(this.value)" value="${S.query.replace(/"/g,"&quot;")}"></div>
+    <div class="catfilter" id="catBar">${catBar()}</div>
+    <div class="packstrip-lbl">Quick packs</div>
+    <div class="packstrip">${packs}</div>
     <div id="mGrid">${gridSection()}</div>`;
 }
 
@@ -285,9 +311,10 @@ function renderModal(){
       <div class="tot"><span>Briq fee (${Math.round(FEE*100)}%)</span><span>${fmt(grand()-supTot())}</span></div>${sv}
       <div class="tot grand"><span>Total</span><span>${fmt(grand())}</span></div></div>
       <div class="form-label" style="margin:18px 0 9px">Delivery slot</div><div class="slot-grid" role="radiogroup" aria-label="Delivery slot">${slots}</div>
-      <button class="btn btn-green btn-block" style="margin-top:18px" onclick="placeOrder()">Place order</button>
-      <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:12px">No deposit · pay on delivery · wrong spec replaced free</p></div>`;
+      <div class="guarantee">${I("shield",15)}<span><strong>Briq Guarantee</strong> — if any material fails spec or arrives wrong, we replace it free.</span></div>
+      <button class="btn btn-green btn-block" style="margin-top:14px" onclick="placeOrder()">Place order</button>
+      <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:12px">No deposit · pay on delivery</p></div>`;
 }
 
-Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,S});
+Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,imgFail,S});
 boot();
