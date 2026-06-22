@@ -42,7 +42,7 @@ const FB_PACKS = [
 let clientId = localStorage.getItem("briq-client");
 if (!clientId) { clientId = "c" + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("briq-client", clientId); }
 
-const S = { view:"materials", cart:{}, materials:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false };
+const S = { view:"materials", cart:{}, materials:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:GROUPS[0], query:"" };
 
 const fmt = (n) => "UGX " + Math.round(n).toLocaleString("en-UG");
 const sh = (n) => Math.round(n).toLocaleString("en-UG");
@@ -69,6 +69,8 @@ function I(name, s = 16) {
     spark:'<path d="M12 3l2.2 5.6L20 11l-5.8 2.4L12 19l-2.2-5.6L4 11l5.8-2.4z"/>',
     cart:'<path d="M4 5h2l2 11h9l2-7H7"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/>',
     box:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    tag:'<path d="M4 12V5a1 1 0 011-1h7l8 8-8 8z"/><circle cx="8.5" cy="8.5" r="1.3"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" aria-hidden="true" focusable="false">${P[name]||""}</svg>`;
 }
@@ -84,6 +86,10 @@ function bump(id,d){ setQty(id,(S.cart[id]||0)+d); }
 function addPack(pid){ const p=S.packs.find(x=>x.id===pid); if(!p)return; for(const[id,q]of Object.entries(p.items))S.cart[id]=(S.cart[id]||0)+q; toast(`${p.name} pack added`); render(); }
 function go(v){ S.view=v; closeSidebar(); window.scrollTo(0,0); render(); const c=$("content"); c.classList.remove("enter"); void c.offsetWidth; c.classList.add("enter"); }
 function setSlot(s){ S.slot=s; renderModal(); const b=[...$("reviewCard").querySelectorAll(".slot")].find(x=>x.textContent===s); if(b)b.focus(); }
+function paintGrid(){ const cb=$("catBar"); if(cb)cb.innerHTML=catBar(); const g=$("mGrid"); if(g)g.innerHTML=gridSection(); }
+function setCat(g){ S.cat=g; S.query=""; const si=$("mSearch"); if(si)si.value=""; paintGrid(); }
+function setQuery(v){ S.query=v; paintGrid(); }
+function clearSearch(){ S.query=""; const si=$("mSearch"); if(si){ si.value=""; si.focus(); } paintGrid(); }
 function toggleAdd(){ S.adding=!S.adding; render(); }
 function openSidebar(){ $("sidebar").classList.add("open"); $("overlay").classList.add("show"); document.querySelector(".mob-sidebar-btn").setAttribute("aria-expanded","true"); }
 function closeSidebar(){ $("sidebar").classList.remove("open"); $("overlay").classList.remove("show"); document.querySelector(".mob-sidebar-btn").setAttribute("aria-expanded","false"); }
@@ -178,11 +184,11 @@ function render(){
 
 function viewSkeleton(){
   const packs=Array.from({length:4},()=>`<div class="skel sk-pack"></div>`).join("");
-  const card=(n)=>`<div class="card"><div class="card-head"><div class="card-title"><span class="skel sk-ic" style="width:28px;height:28px;border-radius:8px"></span><span class="skel sk-line" style="width:90px"></span></div></div>${
-    Array.from({length:n},()=>`<div class="sk-row"><span class="skel sk-ic"></span><div style="flex:1"><div class="skel sk-line" style="width:55%;margin-bottom:8px"></div><div class="skel sk-line" style="width:35%"></div></div><span class="skel" style="width:38px;height:38px;border-radius:11px"></span></div>`).join("")
-  }</div>`;
-  return `<div class="info-banner" style="opacity:.6">${I("shield",17)}<div class="info-banner-text">Loading materials…</div></div>
-    <div class="pack-rail" aria-hidden="true">${packs}</div>${card(3)}${card(2)}`;
+  const cards=Array.from({length:6},()=>`<div class="pcard"><div class="pcard-top"><span class="skel sk-ic"></span></div><div class="skel sk-line" style="width:72%;height:13px"></div><div class="skel sk-line" style="width:46%;margin-top:9px"></div><div class="pcard-foot"><div style="flex:1"><div class="skel sk-line" style="width:58%;height:15px"></div></div><span class="skel" style="width:40px;height:40px;border-radius:11px"></span></div></div>`).join("");
+  return `<div class="skel sk-line" style="width:260px;height:24px;margin-bottom:16px"></div>
+    <div class="skel" style="height:50px;border-radius:11px;margin-bottom:18px"></div>
+    <div class="pack-rail" aria-hidden="true">${packs}</div>
+    <div class="mgrid" style="margin-top:20px">${cards}</div>`;
 }
 
 function renderProjectPanel(){
@@ -194,28 +200,51 @@ function renderProjectPanel(){
   $("projPanel").innerHTML = `<div class="panel-title">Project</div>${sel}<button class="btn btn-sm" style="width:100%;justify-content:center" onclick="toggleAdd()">${S.adding?"Cancel":"+ New project"}</button>${form}`;
 }
 
+function matFor(){
+  const q=S.query.trim().toLowerCase();
+  if(q) return S.materials.filter(m=>(m.name+" "+m.spec+" "+m.group).toLowerCase().includes(q));
+  return S.materials.filter(m=>m.group===S.cat);
+}
+function pcard(m){
+  const g=m.group, q=S.cart[m.id]||0;
+  const ctrl = q===0
+    ? `<button class="add-btn" onclick="bump('${m.id}',1)" aria-label="Add ${m.name}">${I("plus",17)}</button>`
+    : `<div class="qbox" role="group" aria-label="Quantity, ${m.name}"><button onclick="bump('${m.id}',-1)" aria-label="Remove one ${m.name}">${I("minus",15)}</button><input value="${q}" inputmode="numeric" aria-label="${m.name} quantity" onchange="setQty('${m.id}',parseInt(this.value.replace(/\\D/g,''))||0)"><button onclick="bump('${m.id}',1)" aria-label="Add one ${m.name}">${I("plus",15)}</button></div>`;
+  return `<div class="pcard ${q>0?"on":""}">
+    <div class="pcard-top"><span class="m-icon ${ACC[g]}">${I(GICON[g],18)}</span>${m.verified?`<span class="pill pill-green">${I("check",11)}Verified</span>`:""}</div>
+    <div class="pcard-name">${m.name}</div><div class="pcard-spec">${m.spec}</div>
+    <div class="pcard-foot"><div class="pcard-price"><b>${fmt(m.brik)}</b> <span>/ ${m.unit}</span><div class="pcard-meta">supplier + ${Math.round(FEE*100)}% · <em>save ${sh(m.save)}</em></div></div>${ctrl}</div>
+  </div>`;
+}
+function catBar(){
+  const searching=S.query.trim().length>0;
+  return GROUPS.map(g=>{
+    const n=S.materials.filter(m=>m.group===g).length;
+    const on=!searching && S.cat===g;
+    return `<button class="cat-tab ${ACC[g]} ${on?"on":""}"${on?' aria-current="true"':""} onclick="setCat('${g}')"><span class="dot"></span>${g}<span class="ct-count">${n}</span></button>`;
+  }).join("");
+}
+function gridSection(){
+  const searching=S.query.trim().length>0;
+  const list=matFor();
+  const head=`<div class="grid-head"><h2 class="card-title">${searching?"Results":S.cat}</h2>${searching?`<button class="link-btn" onclick="clearSearch()">Clear search</button>`:`<span class="grid-count">${list.length} item${list.length!==1?"s":""}</span>`}</div>`;
+  if(!list.length) return head+`<div class="card"><div class="empty-state"><div class="empty-icon">${I("search",24)}</div><div class="empty-title">No materials match “${S.query.trim()}”</div><div class="empty-sub">Try another term, or pick a category above.</div></div></div>`;
+  return head+`<div class="mgrid">${list.map(pcard).join("")}</div>`;
+}
 function viewMaterials(){
   const packs = S.packs.map(p=>{
     const tot=Object.entries(p.items).reduce((s,[id,q])=>{const m=M(id);return s+(m?m.brik*q:0);},0);
     return `<button class="pack" onclick="addPack('${p.id}')"><div class="pc">${I("spark",16)}</div><b>${p.name}</b><span>${p.note}</span><em>≈ ${fmt(tot)} · add</em></button>`;
   }).join("");
-  const groups = GROUPS.map(g=>{
-    const rows = S.materials.filter(m=>m.group===g).map(m=>{
-      const q=S.cart[m.id]||0;
-      const ctrl = q===0
-        ? `<button class="add-btn" onclick="bump('${m.id}',1)" aria-label="Add ${m.name}">${I("plus",17)}</button>`
-        : `<div class="qbox" role="group" aria-label="Quantity, ${m.name}"><button onclick="bump('${m.id}',-1)" aria-label="Remove one ${m.name}">${I("minus",15)}</button><input value="${q}" inputmode="numeric" aria-label="${m.name} quantity" onchange="setQty('${m.id}',parseInt(this.value.replace(/\\D/g,''))||0)"><button onclick="bump('${m.id}',1)" aria-label="Add one ${m.name}">${I("plus",15)}</button></div>`;
-      return `<div class="mrow"><div class="m-icon ${ACC[g]}">${I(GICON[g],18)}</div>
-        <div class="m-info"><div class="m-name">${m.name} ${m.verified?`<span class="pill pill-green">${I("check",11)}Verified</span>`:""}</div>
-        <div class="m-spec">${m.spec}</div>
-        <div class="m-price"><b>${fmt(m.brik)}</b> / ${m.unit} <span class="m-save">save ${sh(m.save)}</span></div></div>${ctrl}</div>`;
-    }).join("");
-    return `<div class="card"><div class="card-head"><h2 class="card-title"><span class="ci m-icon ${ACC[g]}" style="width:28px;height:28px">${I(GICON[g],15)}</span>${g}</h2></div>${rows}</div>`;
-  }).join("");
-  return `${S.offline?`<div class="info-banner">${I("box",17)}<div class="info-banner-text">Showing sample data — backend not reachable right now.</div></div>`:`<div class="info-banner">${I("shield",17)}<div class="info-banner-text">Engineer-verified materials, priced openly, delivered to site. Pay on delivery.</div></div>`}
-    <h2 class="card-title" style="margin:4px 2px 12px">Quick packs</h2>
+  const banner = S.offline ? `<div class="info-banner">${I("box",17)}<div class="info-banner-text">Showing sample data — backend not reachable right now.</div></div>` : "";
+  return `${banner}
+    <div class="mlead">What does your site need today?</div>
+    <div class="search-wrap">${I("search",18)}<input id="mSearch" class="search-input" type="search" placeholder="Search cement, Y12, blocks, ballast…" aria-label="Search materials" autocomplete="off" oninput="setQuery(this.value)" value="${S.query.replace(/"/g,"&quot;")}"></div>
+    <div class="trust-ribbon"><span class="ti">${I("shield",15)}Engineer-verified</span><span class="ti">${I("tag",15)}Below retail</span><span class="ti">${I("truck",15)}Pay on delivery</span></div>
+    <h2 class="card-title" style="margin:8px 2px 12px">Quick packs</h2>
     <div class="pack-rail">${packs}</div>
-    ${groups}`;
+    <div class="catbar" id="catBar">${catBar()}</div>
+    <div id="mGrid">${gridSection()}</div>`;
 }
 
 function viewOrders(){
@@ -260,5 +289,5 @@ function renderModal(){
       <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:12px">No deposit · pay on delivery · wrong spec replaced free</p></div>`;
 }
 
-Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,S});
+Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,S});
 boot();
