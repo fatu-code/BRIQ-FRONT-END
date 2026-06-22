@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#15A24A" />
+  <title>Brik — materials, verified, delivered</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bk">
+    <div class="app">
+      <div class="top">
+        <div class="topin">
+          <div class="logo">Bri<b>k</b></div>
+          <div class="loc"><i></i>Jinja</div>
+        </div>
+      </div>
+      <main id="view"></main>
+      <div id="cartbar"></div>
+      <nav class="tabs" id="tabs"></nav>
+      <div id="sheet"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+  </script>
+</body>
+</html>
