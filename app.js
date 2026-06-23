@@ -220,6 +220,32 @@ function matFor(){
   if(S.cat==="all") return S.materials;
   return S.materials.filter(m=>m.group===S.cat);
 }
+const ART = {
+  bag:'<path d="M18 13c0-3 2-5 6-5s6 2 6 5l1.6 22c.2 2.8-1.8 4.5-4.6 4.5h-5c-2.8 0-4.8-1.7-4.6-4.5z"/><path d="M19 12.5h10"/><rect x="20" y="19" width="8" height="7" rx="1.5"/>',
+  rebar:'<path d="M11 17h26M11 24h26M11 31h26"/><path d="M17 17l2-3M25 24l2-3M21 31l2-3"/>',
+  mesh:'<rect x="13" y="14" width="22" height="20" rx="1.5"/><path d="M13 20.7h22M13 27.3h22M20.3 14v20M27.7 14v20"/>',
+  wire:'<path d="M30 14c-9 0-9 5.5 0 5.5s9 5.5 0 5.5-9 5.5 0 5.5-9 5.5 0 5.5"/>',
+  block:'<rect x="11" y="18" width="26" height="14" rx="1.5"/><rect x="15" y="22" width="6" height="6" rx="1"/><rect x="27" y="22" width="6" height="6" rx="1"/>',
+  sand:'<path d="M9 34h30"/><path d="M11 34c3-12 7-16 13-16s10 4 13 16"/><circle cx="20" cy="29" r="1"/><circle cx="24" cy="32" r="1"/><circle cx="28" cy="28" r="1"/>',
+  aggregate:'<circle cx="18" cy="28" r="6"/><circle cx="29" cy="26" r="6"/><circle cx="24" cy="34" r="5"/>',
+  roof:'<path d="M9 20c2.3-3 4.7-3 7 0s4.7 3 7 0 4.7-3 7 0"/><path d="M9 28c2.3-3 4.7-3 7 0s4.7 3 7 0 4.7-3 7 0"/>',
+  nails:'<path d="M19 13v15l2 4 2-4V13"/><path d="M16 13h10"/><path d="M28 17v11l1.5 3 1.5-3V17"/><path d="M25.5 17h7"/>',
+};
+function artKind(id){
+  id=String(id);
+  if(id.startsWith("cem")) return "bag";
+  if(id.startsWith("bar")) return "rebar";
+  if(id==="brc") return "mesh";
+  if(id==="wire") return "wire";
+  if(id.startsWith("block")) return "block";
+  if(id.startsWith("sand")) return "sand";
+  if(id.startsWith("sheet")) return "roof";
+  if(id==="nails") return "nails";
+  return "aggregate"; // ballast, hardcore, anything stony
+}
+function artFor(m){
+  return `<svg class="art-svg" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ART[artKind(m.id)]}</svg>`;
+}
 function ctrlHTML(m){
   const q=S.cart[m.id]||0;
   return q===0
@@ -231,7 +257,7 @@ function pcard(m){
   const img = IMGBAD.has(m.id) ? "" : `<img src="images/${m.id}.jpg" alt="${m.name}" loading="lazy" onerror="imgFail('${m.id}',this)">`;
   const seal = m.verified ? `<span class="seal" role="img" aria-label="Engineer-verified" title="Engineer-verified">${I("check",13)}</span>` : "";
   return `<div class="pcard ${q>0?"on":""}" id="pc-${m.id}">
-    <div class="pcard-img ${ACC[g]}"><span class="pcard-fallback" aria-hidden="true"><span class="fchip">${I(GICON[g],24)}</span><span class="flabel">${g}</span></span>${img}${seal}</div>
+    <div class="pcard-img ${ACC[g]}"><span class="pcard-art" aria-hidden="true">${artFor(m)}</span>${img}<span class="pcard-cat">${g}</span>${seal}</div>
     <div class="pcard-body">
       <div class="pcard-name">${m.name}</div>
       <div class="pcard-spec">${m.spec}</div>

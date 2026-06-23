@@ -191,28 +191,27 @@ svg{display:block}
 .pcard:hover{transform:translateY(-3px);border-color:var(--green-mid);box-shadow:0 16px 34px rgba(0,0,0,.10)}
 .pcard.on{border-color:var(--green)}
 .pcard-img{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden}
-.pcard-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.pcard-fallback{display:flex;flex-direction:column;align-items:center;gap:9px}
-.pcard-fallback .fchip{width:52px;height:52px;border-radius:15px;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.07);display:grid;place-items:center}
-.pcard-fallback svg{width:24px;height:24px;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.pcard-fallback .flabel{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
-.pcard-img.amber{background:var(--amber-pale)}.pcard-img.amber .pcard-fallback svg{stroke:var(--amber)}
-.pcard-img.blue{background:var(--blue-pale)}.pcard-img.blue .pcard-fallback svg{stroke:var(--blue)}
-.pcard-img.green{background:var(--green-pale)}.pcard-img.green .pcard-fallback svg{stroke:var(--green-dark)}
-.pcard-img.violet{background:var(--violet-pale)}.pcard-img.violet .pcard-fallback svg{stroke:var(--violet)}
-.pcard-img.pink{background:var(--pink-pale)}.pcard-img.pink .pcard-fallback svg{stroke:var(--pink)}
+.pcard-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.pcard-art{position:absolute;inset:0;display:grid;place-items:center;padding:8px}
+.art-svg{width:42%;max-width:104px;height:auto;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pcard-cat{position:absolute;top:10px;left:10px;z-index:2;font-size:.56rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--text);background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.05);padding:3px 9px;border-radius:100px}
+.pcard-img.amber{background:radial-gradient(circle at 50% 40%,#fff,var(--amber-pale))}.pcard-img.amber .art-svg{stroke:var(--amber)}
+.pcard-img.blue{background:radial-gradient(circle at 50% 40%,#fff,var(--blue-pale))}.pcard-img.blue .art-svg{stroke:var(--blue)}
+.pcard-img.green{background:radial-gradient(circle at 50% 40%,#fff,var(--green-pale))}.pcard-img.green .art-svg{stroke:var(--green-dark)}
+.pcard-img.violet{background:radial-gradient(circle at 50% 40%,#fff,var(--violet-pale))}.pcard-img.violet .art-svg{stroke:var(--violet)}
+.pcard-img.pink{background:radial-gradient(circle at 50% 40%,#fff,var(--pink-pale))}.pcard-img.pink .art-svg{stroke:var(--pink)}
 .seal{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:var(--green);border:2px solid #fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.18);z-index:2}
 .seal svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.pcard-body{display:flex;flex-direction:column;flex:1;padding:16px}
+.pcard-body{display:flex;flex-direction:column;flex:1;padding:14px 16px 16px}
 .pcard-name{font-size:.95rem;font-weight:800;color:var(--text);letter-spacing:-.01em;line-height:1.25;min-height:2.4em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pcard-spec{font-size:.75rem;font-weight:600;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pcard-price{display:flex;align-items:baseline;gap:8px;margin-top:12px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.pcard-price{display:flex;align-items:baseline;gap:8px;margin-top:10px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
 .pcard-price b{font-size:1.25rem;font-weight:900;color:var(--text);letter-spacing:-.02em}
 .pcard-unit{font-size:.72rem;font-weight:700;color:var(--muted)}
 .pcard-price s{font-size:.8rem;font-weight:700;color:var(--muted);text-decoration:line-through;margin-left:2px}
 .pcard-save{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin-top:8px;font-size:.68rem;font-weight:800;color:var(--green-dark);background:var(--green-pale);border:1px solid var(--green-mid);padding:2px 8px;border-radius:100px;font-variant-numeric:tabular-nums}
 .pcard-save svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.pcard-ctrl{margin-top:auto;padding-top:16px}
+.pcard-ctrl{margin-top:auto;padding-top:12px}
 .add-order-btn{width:100%;height:44px;border-radius:var(--radius-sm);border:1.5px solid var(--green-dark);background:var(--green-dark);color:#fff;font-family:var(--font2);font-size:.82rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow-green);transition:background .15s,transform .12s var(--ease)}
 .add-order-btn:hover{background:var(--green-deep)}
 .add-order-btn:active{transform:scale(.97)}
