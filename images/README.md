@@ -3,12 +3,12 @@
 Drop a photo here named `{material_id}.jpg` and the Order page card picks it up
 automatically. Shoot **4:3 landscape** (e.g. 800×600), consistent lighting/background.
 Until a file exists, the card shows a clean category-tinted panel with the category
-icon — never a broken image.
+icon - never a broken image.
 
 ## Filenames the gallery looks for
 ```
-cem-hima.jpg      Cement — Hima
-cem-tororo.jpg    Cement — Tororo
+cem-hima.jpg      Cement - Hima
+cem-tororo.jpg    Cement - Tororo
 bar-y10.jpg       Iron bar Y10
 bar-y12.jpg       Iron bar Y12
 bar-y16.jpg       Iron bar Y16

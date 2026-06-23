@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Briq — Order materials</title>
+<title>Briq - Order materials</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Varela+Round&display=swap" rel="stylesheet">
@@ -95,7 +95,7 @@ svg{display:block}
 .pack b{font-size:.82rem;font-weight:900;display:block}
 .pack span{font-size:.68rem;font-weight:700;color:var(--muted)}
 
-/* PRODUCT GRID — the hero */
+/* PRODUCT GRID - the hero */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4)}
 .pcard{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s;display:flex;flex-direction:column}
 .pcard:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(16,40,28,.1);border-color:var(--green-mid)}
@@ -235,8 +235,8 @@ function sv(n,s){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 const CHECK='<path d="M5 12l4.5 4.5L19 7"/>',PLUS='<path d="M12 5v14M5 12h14"/>',MINUS='<path d="M5 12h14"/>',CART='<path d="M4 5h2l2 11h9l2-7H7"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/>',SPARK='<path d="M12 3l2.2 5.6L20 11l-5.8 2.4L12 19l-2.2-5.6L4 11l5.8-2.4z"/>';
 
 const MAT=[
-  ["cem-hima","Cement — Hima","50kg · OPC 42.5N","Cement","bag",38000,44000,1],
-  ["cem-tororo","Cement — Tororo","50kg · OPC 42.5N","Cement","bag",36000,42000,1],
+  ["cem-hima","Cement - Hima","50kg · OPC 42.5N","Cement","bag",38000,44000,1],
+  ["cem-tororo","Cement - Tororo","50kg · OPC 42.5N","Cement","bag",36000,42000,1],
   ["bar-y12","Iron bar Y12","12mm deformed · 12m","Steel","length",38000,44000,1],
   ["bar-y10","Iron bar Y10","10mm deformed · 12m","Steel","length",27000,32000,1],
   ["bar-y16","Iron bar Y16","16mm deformed · 12m","Steel","length",68000,78000,1],
@@ -316,7 +316,7 @@ function renderModal(){
     <div class="mtot"><span>Briq fee (6%)</span><span class="tnum">${fmt(grand()-supTot())}</span></div>
     <div class="mtot sv"><span>You save vs retail</span><span class="tnum">${fmt(saveTot())}</span></div>
     <div class="mtot grand"><span>Total</span><span class="tnum">${fmt(grand())}</span></div></div>
-    <div class="mnote">${sv(CHECK,14)} Every line is engineer-verified. Wrong spec or it fails — replaced free.</div>
+    <div class="mnote">${sv(CHECK,14)} Every line is engineer-verified. Wrong spec or it fails - replaced free.</div>
     <button class="mbtn" onclick="place()">Place order · pay on delivery</button></div>`;
 }
 render();

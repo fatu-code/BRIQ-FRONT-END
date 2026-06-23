@@ -1,4 +1,4 @@
-/* ── BRIQ — construction materials · responsive web app in the BGS design language ── */
+/* ── BRIQ - construction materials · responsive web app in the BGS design language ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --green:#009c41;--green-dark:#007a33;--green-deep:#006128;--green-pale:#eaf7f0;--green-mid:#b3e6c8;
@@ -159,7 +159,7 @@ svg{display:block}
 .search-input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
 .search-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,156,65,.12)}
 
-/* quiet category filter — small dot per category */
+/* quiet category filter - small dot per category */
 .catfilter{display:flex;gap:8px;overflow-x:auto;padding:0 0 4px;margin-bottom:16px;scrollbar-width:none}
 .catfilter::-webkit-scrollbar{display:none}
 .cft{flex:none;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:100px;border:1.5px solid transparent;background:none;font-family:var(--font2);font-size:.78rem;font-weight:800;color:var(--muted);white-space:nowrap;transition:all .15s}

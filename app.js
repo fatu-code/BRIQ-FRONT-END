@@ -1,4 +1,4 @@
-/* Briq — responsive web app, BGS design language. Talks to the live Railway API. */
+/* Briq - responsive web app, BGS design language. Talks to the live Railway API. */
 const API = (window.BRIK_CONFIG && window.BRIK_CONFIG.API_BASE) || "http://localhost:4000";
 const FEE = 0.06;
 const SLOTS = ["Tomorrow AM", "Tomorrow PM", "In 2 days AM", "In 2 days PM"];
@@ -13,8 +13,8 @@ const VIEWS = {
 };
 
 const FB = [
-  ["cem-hima","Cement — Hima","50kg · OPC 42.5N","Cement","bag",38000,44000,1],
-  ["cem-tororo","Cement — Tororo","50kg · OPC 42.5N","Cement","bag",36000,42000,1],
+  ["cem-hima","Cement - Hima","50kg · OPC 42.5N","Cement","bag",38000,44000,1],
+  ["cem-tororo","Cement - Tororo","50kg · OPC 42.5N","Cement","bag",36000,42000,1],
   ["bar-y10","Iron bar Y10","10mm deformed · 12m","Steel","length",27000,32000,1],
   ["bar-y12","Iron bar Y12","12mm deformed · 12m","Steel","length",38000,44000,1],
   ["bar-y16","Iron bar Y16","16mm deformed · 12m","Steel","length",68000,78000,1],
@@ -153,7 +153,7 @@ async function boot(){
 }
 
 window.addEventListener("online",()=>{ if(S.offline){ S.offline=false; toast("Back online"); boot(); } });
-window.addEventListener("offline",()=>{ S.offline=true; toast("You're offline — showing saved data"); render(); });
+window.addEventListener("offline",()=>{ S.offline=true; toast("You're offline - showing saved data"); render(); });
 
 /* ── RENDER ── */
 function renderChrome(){
@@ -264,9 +264,9 @@ function viewMaterials(){
     const tot=Object.entries(p.items).reduce((s,[id,q])=>{const m=M(id);return s+(m?m.brik*q:0);},0);
     return `<button class="packchip" onclick="addPack('${p.id}')" aria-label="Add ${p.name} pack, about ${fmt(tot)}">${I("spark",15)}<b>${p.name}</b><em>≈ ${fmt(tot)}</em></button>`;
   }).join("");
-  const banner = S.offline ? `<div class="info-banner">${I("box",17)}<div class="info-banner-text">Showing sample data — backend not reachable right now.</div></div>` : "";
+  const banner = S.offline ? `<div class="info-banner">${I("box",17)}<div class="info-banner-text">Showing sample data - backend not reachable right now.</div></div>` : "";
   return `${banner}
-    <div class="search-wrap">${I("search",18)}<input id="mSearch" class="search-input" type="search" placeholder="Search materials — cement, Y12, blocks, ballast…" aria-label="Search materials" autocomplete="off" oninput="setQuery(this.value)" value="${S.query.replace(/"/g,"&quot;")}"></div>
+    <div class="search-wrap">${I("search",18)}<input id="mSearch" class="search-input" type="search" placeholder="Search materials - cement, Y12, blocks, ballast…" aria-label="Search materials" autocomplete="off" oninput="setQuery(this.value)" value="${S.query.replace(/"/g,"&quot;")}"></div>
     <div class="catfilter" id="catBar">${catBar()}</div>
     <div class="packstrip-lbl">Quick packs</div>
     <div class="packstrip">${packs}</div>
@@ -311,7 +311,7 @@ function renderModal(){
       <div class="tot"><span>Briq fee (${Math.round(FEE*100)}%)</span><span>${fmt(grand()-supTot())}</span></div>${sv}
       <div class="tot grand"><span>Total</span><span>${fmt(grand())}</span></div></div>
       <div class="form-label" style="margin:18px 0 9px">Delivery slot</div><div class="slot-grid" role="radiogroup" aria-label="Delivery slot">${slots}</div>
-      <div class="guarantee">${I("shield",15)}<span><strong>Briq Guarantee</strong> — if any material fails spec or arrives wrong, we replace it free.</span></div>
+      <div class="guarantee">${I("shield",15)}<span><strong>Briq Guarantee</strong> - if any material fails spec or arrives wrong, we replace it free.</span></div>
       <button class="btn btn-green btn-block" style="margin-top:14px" onclick="placeOrder()">Place order</button>
       <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:12px">No deposit · pay on delivery</p></div>`;
 }
