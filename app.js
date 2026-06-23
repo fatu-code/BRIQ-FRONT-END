@@ -231,7 +231,7 @@ function pcard(m){
   const img = IMGBAD.has(m.id) ? "" : `<img src="images/${m.id}.jpg" alt="${m.name}" loading="lazy" onerror="imgFail('${m.id}',this)">`;
   const seal = m.verified ? `<span class="seal" role="img" aria-label="Engineer-verified" title="Engineer-verified">${I("check",13)}</span>` : "";
   return `<div class="pcard ${q>0?"on":""}" id="pc-${m.id}">
-    <div class="pcard-img ${ACC[g]}"><span class="pcard-fallback" aria-hidden="true">${I(GICON[g],38)}</span>${img}${seal}</div>
+    <div class="pcard-img ${ACC[g]}"><span class="pcard-fallback" aria-hidden="true"><span class="fchip">${I(GICON[g],24)}</span><span class="flabel">${g}</span></span>${img}${seal}</div>
     <div class="pcard-body">
       <div class="pcard-name">${m.name}</div>
       <div class="pcard-spec">${m.spec}</div>
@@ -264,8 +264,7 @@ function viewMaterials(){
     const tot=Object.entries(p.items).reduce((s,[id,q])=>{const m=M(id);return s+(m?m.brik*q:0);},0);
     return `<button class="packchip" onclick="addPack('${p.id}')" aria-label="Add ${p.name} pack, about ${fmt(tot)}">${I("spark",15)}<b>${p.name}</b><em>≈ ${fmt(tot)}</em></button>`;
   }).join("");
-  const banner = S.offline ? `<div class="info-banner">${I("box",17)}<div class="info-banner-text">Showing sample data - backend not reachable right now.</div></div>` : "";
-  return `${banner}
+  return `
     <div class="search-wrap">${I("search",18)}<input id="mSearch" class="search-input" type="search" placeholder="Search materials - cement, Y12, blocks, ballast…" aria-label="Search materials" autocomplete="off" oninput="setQuery(this.value)" value="${S.query.replace(/"/g,"&quot;")}"></div>
     <div class="catfilter" id="catBar">${catBar()}</div>
     <div class="packstrip-lbl">Quick packs</div>
