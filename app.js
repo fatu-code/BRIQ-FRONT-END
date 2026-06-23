@@ -198,10 +198,8 @@ function render(){
 }
 
 function viewSkeleton(){
-  const packs=Array.from({length:4},()=>`<div class="skel sk-pack"></div>`).join("");
   const cards=Array.from({length:6},()=>`<div class="sk-card"><div class="skel sk-img"></div><div class="sk-body"><div class="skel sk-line" style="width:70%;height:13px"></div><div class="skel sk-line" style="width:45%;margin-top:9px"></div><div class="skel sk-line" style="width:40%;height:18px;margin-top:13px"></div><div class="skel sk-line" style="width:100%;height:42px;border-radius:12px;margin-top:14px"></div></div></div>`).join("");
-  return `<div class="skel" style="height:48px;border-radius:12px;margin-bottom:18px"></div>
-    <div class="packstrip" aria-hidden="true" style="margin-bottom:22px">${packs}</div>
+  return `<div class="skel" style="height:48px;border-radius:12px;margin-bottom:14px"></div>
     <div class="mgrid">${cards}</div>`;
 }
 
@@ -286,15 +284,9 @@ function gridSection(){
   return head+`<div class="mgrid">${list.map(pcard).join("")}</div>`;
 }
 function viewMaterials(){
-  const packs = S.packs.map(p=>{
-    const tot=Object.entries(p.items).reduce((s,[id,q])=>{const m=M(id);return s+(m?m.brik*q:0);},0);
-    return `<button class="packchip" onclick="addPack('${p.id}')" aria-label="Add ${p.name} pack, about ${fmt(tot)}">${I("spark",15)}<b>${p.name}</b><em>≈ ${fmt(tot)}</em></button>`;
-  }).join("");
   return `
     <div class="search-wrap">${I("search",18)}<input id="mSearch" class="search-input" type="search" placeholder="Search materials - cement, Y12, blocks, ballast…" aria-label="Search materials" autocomplete="off" oninput="setQuery(this.value)" value="${S.query.replace(/"/g,"&quot;")}"></div>
     <div class="catfilter" id="catBar">${catBar()}</div>
-    <div class="packstrip-lbl">Quick packs</div>
-    <div class="packstrip">${packs}</div>
     <div id="mGrid">${gridSection()}</div>`;
 }
 
