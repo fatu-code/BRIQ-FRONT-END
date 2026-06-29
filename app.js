@@ -47,6 +47,33 @@ const IMGBAD = new Set();
 function imgFail(id,el){ IMGBAD.add(id); if(el)el.remove(); }
 function pulse(el){ if(!el)return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
 
+/* ── ROUTER (client-side, deep-linkable) ── */
+const FILE = location.protocol === "file:";
+const VIEW_PATH = { materials:"/products", orders:"/orders", why:"/why" };
+function currentPath(){
+  if(FILE) return (location.hash || "").replace(/^#/,"") || "/products";
+  return location.pathname.replace(/\/index\.html$/,"") || "/products";
+}
+function routeHref(path){ return FILE ? "#"+path : path; }
+function navigate(path,replace){
+  if(FILE){ if(replace) location.replace("#"+path); else location.hash=path; }
+  else { history[replace?"replaceState":"pushState"]({},"",path); route(); }
+}
+function navClick(e,path){ if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button) return true; e.preventDefault(); navigate(path); return false; }
+function openProduct(id){ navigate("/products/"+encodeURIComponent(id)); }
+function route(){
+  const path=currentPath();
+  const m=path.match(/^\/products\/(.+)$/);
+  if(m){ S.view="detail"; S.detailId=decodeURIComponent(m[1]); }
+  else if(path==="/orders") S.view="orders";
+  else if(path==="/why") S.view="why";
+  else S.view="materials";
+  closeSidebar();
+  render();
+  window.scrollTo(0,0);
+  const c=$("content"); if(c){ c.classList.remove("enter"); void c.offsetWidth; c.classList.add("enter"); }
+}
+
 const fmt = (n) => "UGX " + Math.round(n).toLocaleString("en-UG");
 const sh = (n) => Math.round(n).toLocaleString("en-UG");
 const M = (id) => S.materials.find((m) => m.id === id);
@@ -74,6 +101,7 @@ function I(name, s = 16) {
     box:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/>',
     search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
     tag:'<path d="M4 12V5a1 1 0 011-1h7l8 8-8 8z"/><circle cx="8.5" cy="8.5" r="1.3"/>',
+    back:'<path d="M19 12H5M11 18l-6-6 6-6"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" aria-hidden="true" focusable="false">${P[name]||""}</svg>`;
 }
@@ -87,13 +115,11 @@ const count = () => lines().reduce((s,l)=>s+l.qty,0);
 function setQty(id,q){
   q=Math.max(0,Math.floor(q||0));
   if(q===0)delete S.cart[id]; else S.cart[id]=q;
-  const el=$("pc-"+id), cw=$("ctrl-"+id), m=M(id);
-  if(S.view==="materials" && !S.loading && el && cw && m){ el.classList.toggle("on",(S.cart[id]||0)>0); cw.innerHTML=ctrlHTML(m); renderChrome(); }
-  else render();
+  render();
 }
 function bump(id,d){ setQty(id,(S.cart[id]||0)+d); }
 function addPack(pid){ const p=S.packs.find(x=>x.id===pid); if(!p)return; for(const[id,q]of Object.entries(p.items))S.cart[id]=(S.cart[id]||0)+q; toast(`${p.name} pack added`); render(); }
-function go(v){ S.view=v; closeSidebar(); window.scrollTo(0,0); render(); const c=$("content"); c.classList.remove("enter"); void c.offsetWidth; c.classList.add("enter"); }
+function go(v){ navigate(VIEW_PATH[v]||"/products"); }
 function setSlot(s){ S.slot=s; renderModal(); const b=[...$("reviewCard").querySelectorAll(".slot")].find(x=>x.textContent===s); if(b)b.focus(); }
 function paintGrid(){ const cb=$("catBar"); if(cb)cb.innerHTML=catBar(); const g=$("mGrid"); if(g)g.innerHTML=gridSection(); }
 function setCat(g){ S.cat=g; S.query=""; const si=$("mSearch"); if(si)si.value=""; paintGrid(); }
@@ -157,8 +183,9 @@ window.addEventListener("offline",()=>{ S.offline=true; toast("You're offline - 
 
 /* ── RENDER ── */
 function renderChrome(){
+  const av = S.view==="detail" ? "materials" : S.view;
   // topbar
-  $("tbTitle").textContent = VIEWS[S.view].title;
+  $("tbTitle").textContent = S.view==="detail" ? ((M(S.detailId)||{}).name || "Product") : VIEWS[S.view].title;
   $("tbSub").textContent = S.offline ? "Briq · Jinja · sample data" : "Briq · Jinja";
   // cart top button (desktop)
   const ct=$("cartTop");
@@ -169,14 +196,14 @@ function renderChrome(){
     const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
     const badge = (v==="materials"&&count()>0)?`<span class="nav-badge">${count()}</span>`:(v==="orders"&&S.orders.length?`<span class="nav-badge">${S.orders.length}</span>`:"");
     const lbl = cnt>0?` aria-label="${VIEWS[v].title}, ${cnt}"`:"";
-    return `<button class="nav-item ${S.view===v?"active":""}"${S.view===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="nav-icon">${I(VIEWS[v].icon,14)}</span><span class="nav-label">${VIEWS[v].title}</span>${badge}</button>`;
+    return `<button class="nav-item ${av===v?"active":""}"${av===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="nav-icon">${I(VIEWS[v].icon,14)}</span><span class="nav-label">${VIEWS[v].title}</span>${badge}</button>`;
   }).join("");
   // bottom nav
   $("bottomNav").innerHTML = `<div class="bn-row">` + Object.keys(VIEWS).map(v=>{
     const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
     const badge=(v==="materials"&&count()>0)?`<span class="bn-badge">${count()}</span>`:"";
     const lbl = cnt>0?` aria-label="${VIEWS[v].title}, ${cnt}"`:"";
-    return `<button class="bn-item ${S.view===v?"on":""}"${S.view===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="bi">${I(VIEWS[v].icon,21)}${badge}</span>${VIEWS[v].title}</button>`;
+    return `<button class="bn-item ${av===v?"on":""}"${av===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="bi">${I(VIEWS[v].icon,21)}${badge}</span>${VIEWS[v].title}</button>`;
   }).join("") + `</div>`;
   // cart bar (mobile)
   $("cartBar").innerHTML = count()>0 ? `<button class="in" onclick="openReview()" aria-label="Review order, ${count()} item${count()>1?"s":""}, total ${fmt(grand())}"><div class="c1"><b>${fmt(grand())}</b><span>${count()} item${count()>1?"s":""} · save ${fmt(saveTot())}</span></div><div class="go">Review ${I("check",15)}</div></button>` : "";
@@ -191,8 +218,9 @@ function render(){
   // content
   const c=$("content");
   c.setAttribute("aria-busy", S.loading?"true":"false");
-  if(S.loading&&S.view==="materials") c.innerHTML=viewSkeleton();
+  if(S.loading && (S.view==="materials"||S.view==="detail")) c.innerHTML = S.view==="detail" ? viewDetailSkeleton() : viewSkeleton();
   else if(S.view==="materials") c.innerHTML=viewMaterials();
+  else if(S.view==="detail") c.innerHTML=viewDetail();
   else if(S.view==="orders") c.innerHTML=viewOrders();
   else c.innerHTML=viewWhy();
 }
@@ -254,16 +282,15 @@ function pcard(m){
   const g=m.group, q=S.cart[m.id]||0;
   const img = IMGBAD.has(m.id) ? "" : `<img src="images/${m.id}.jpg" alt="${m.name}" loading="lazy" onerror="imgFail('${m.id}',this)">`;
   const seal = m.verified ? `<span class="seal" role="img" aria-label="Engineer-verified" title="Engineer-verified">${I("check",13)}</span>` : "";
-  return `<div class="pcard ${q>0?"on":""}" id="pc-${m.id}">
-    <div class="pcard-img ${ACC[g]}"><span class="pcard-art" aria-hidden="true">${artFor(m)}</span>${img}<span class="pcard-cat">${g}</span>${seal}</div>
+  return `<a class="pcard ${q>0?"on":""}" href="${routeHref('/products/'+m.id)}" onclick="return navClick(event,'/products/${m.id}')" aria-label="${m.name}, ${fmt(m.brik)} per ${m.unit}">
+    <div class="pcard-img"><span class="pcard-art" aria-hidden="true">${artFor(m)}</span>${img}<span class="pcard-cat">${g}</span>${seal}</div>
     <div class="pcard-body">
       <div class="pcard-name">${m.name}</div>
       <div class="pcard-spec">${m.spec}</div>
       <div class="pcard-price"><b>${fmt(m.brik)}</b><span class="pcard-unit">/ ${m.unit}</span><s>${sh(m.retail)}</s></div>
       <div class="pcard-save">${I("tag",11)} Save ${sh(m.save)} vs retail</div>
-      <div class="pcard-ctrl" id="ctrl-${m.id}">${ctrlHTML(m)}</div>
     </div>
-  </div>`;
+  </a>`;
 }
 function catBar(){
   const searching=S.query.trim().length>0;
@@ -271,7 +298,7 @@ function catBar(){
   let out=`<button class="cft ${allOn?"on":""}"${allOn?' aria-current="true"':""} onclick="setCat('all')">All</button>`;
   out+=GROUPS.map(g=>{
     const on=!searching && S.cat===g;
-    return `<button class="cft ${ACC[g]} ${on?"on":""}"${on?' aria-current="true"':""} onclick="setCat('${g}')"><i></i>${g}</button>`;
+    return `<button class="cft ${on?"on":""}"${on?' aria-current="true"':""} onclick="setCat('${g}')">${g}</button>`;
   }).join("");
   return out;
 }
@@ -288,6 +315,56 @@ function viewMaterials(){
     <div class="search-wrap">${I("search",18)}<input id="mSearch" class="search-input" type="search" placeholder="Search materials - cement, Y12, blocks, ballast…" aria-label="Search materials" autocomplete="off" oninput="setQuery(this.value)" value="${S.query.replace(/"/g,"&quot;")}"></div>
     <div class="catfilter" id="catBar">${catBar()}</div>
     <div id="mGrid">${gridSection()}</div>`;
+}
+
+function viewDetailSkeleton(){
+  return `<div class="skel" style="width:120px;height:20px;border-radius:100px;margin-bottom:16px"></div>
+  <div class="detail">
+    <div class="detail-media"><div class="skel" style="aspect-ratio:4/3;border-radius:var(--radius)"></div></div>
+    <div class="detail-info">
+      <div class="skel" style="width:84px;height:22px;border-radius:100px"></div>
+      <div class="skel sk-line" style="width:72%;height:26px;margin-top:14px"></div>
+      <div class="skel sk-line" style="width:46%;margin-top:12px"></div>
+      <div class="skel" style="width:55%;height:32px;margin-top:22px"></div>
+      <div class="skel" style="width:100%;height:44px;border-radius:12px;margin-top:18px"></div>
+      <div class="skel" style="width:100%;height:120px;border-radius:12px;margin-top:18px"></div>
+    </div>
+  </div>`;
+}
+function viewDetail(){
+  if(S.loading) return viewDetailSkeleton();
+  const m=M(S.detailId);
+  if(!m) return `<a class="back-link" href="${routeHref('/products')}" onclick="return navClick(event,'/products')">${I("back",16)} All products</a>
+    <div class="card"><div class="empty-state"><div class="empty-icon">${I("search",24)}</div><div class="empty-title">Product not found</div><div class="empty-sub">This item may have been removed. Browse the full catalogue instead.</div></div></div>`;
+  const img = IMGBAD.has(m.id) ? "" : `<img src="images/${m.id}.jpg" alt="${m.name}" onerror="imgFail('${m.id}',this)">`;
+  const seal = m.verified ? `<span class="seal" role="img" aria-label="Engineer-verified">${I("check",13)}</span>` : "";
+  const verified = m.verified ? `<div class="detail-verified">${I("check",14)} Engineer-verified quality mark</div>` : "";
+  const cta = count()>0 ? `<button class="btn btn-green btn-block detail-cta" onclick="openReview()">Review order (${count()}) ${I("check",15)}</button>` : "";
+  return `
+  <a class="back-link" href="${routeHref('/products')}" onclick="return navClick(event,'/products')">${I("back",16)} All products</a>
+  <div class="detail">
+    <div class="detail-media">
+      <div class="detail-photo"><span class="pcard-art" aria-hidden="true">${artFor(m)}</span>${img}${seal}</div>
+      <div class="detail-thumbs"><div class="detail-thumb active">${artFor(m)}</div></div>
+    </div>
+    <div class="detail-info">
+      <span class="detail-cat">${m.group}</span>
+      <h1 class="detail-name">${m.name}</h1>
+      <div class="detail-spec">${m.spec}</div>
+      ${verified}
+      <div class="detail-price-row"><b>${fmt(m.brik)}</b><span class="du">/ ${m.unit}</span><s>${fmt(m.retail)}</s><span class="pcard-save">${I("tag",11)} Save ${sh(m.save)}</span></div>
+      <div class="detail-ctrl" id="ctrl-${m.id}">${ctrlHTML(m)}</div>
+      ${cta}
+      <div class="transparency">
+        <div class="tot"><span>Supplier cost</span><span>${fmt(m.supplier)}</span></div>
+        <div class="tot"><span>Briq fee (${Math.round(FEE*100)}%)</span><span>${fmt(m.fee)}</span></div>
+        <div class="tot grand"><span>Briq price</span><span>${fmt(m.brik)}</span></div>
+        <div class="tot sv"><span>You save vs retail</span><span>${fmt(m.save)}</span></div>
+      </div>
+      <div class="guarantee">${I("shield",15)}<span><strong>Briq Guarantee.</strong> Wrong spec or it fails, we replace it free.</span></div>
+      <div class="detail-note">${I("truck",15)} Pay on delivery, delivered to your site.</div>
+    </div>
+  </div>`;
 }
 
 function viewOrders(){
@@ -333,5 +410,8 @@ function renderModal(){
       <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:12px">No deposit · pay on delivery</p></div>`;
 }
 
-Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,imgFail,S});
+Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,imgFail,navigate,navClick,openProduct,S});
+window.addEventListener("popstate",route);
+window.addEventListener("hashchange",()=>{ if(FILE) route(); });
+route();
 boot();

@@ -1,8 +1,10 @@
-/* ── BRIQ - construction materials · responsive web app in the BGS design language ── */
+/* ── BRIQ - construction materials · responsive web app ── */
+@font-face{font-family:"TAN Paradiso";src:url("fonts/TAN-PARADISO.ttf") format("truetype");font-display:swap}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green:#009c41;--green-dark:#007a33;--green-deep:#006128;--green-pale:#eaf7f0;--green-mid:#b3e6c8;
-  --white:#fff;--bg:#f0f4f2;--border:#dde8e2;--text:#1a2e22;--muted:#527460;--muted-soft:#7a9e8a;
+  --ink:#0A0F0C;--forest:#004D1E;--green:#009C41;--mint:#C7EFD6;
+  --green-dark:#004D1E;--green-deep:#003314;--green-pale:#EAF7F0;--green-mid:#C7EFD6;
+  --white:#fff;--bg:#F1F7F3;--border:#DEEDE5;--text:#0A0F0C;--muted:#5F7E6D;--faint:#9BB5A6;--muted-soft:#9BB5A6;
   --amber:#e8a53a;--amber-pale:#fffbf4;--amber-mid:#f5c07a;--amber-text:#b05a00;
   --red:#e05252;--red-pale:#fff5f5;--red-mid:#fdd;
   --blue:#3b82f6;--blue-pale:#eff6ff;--blue-mid:#bfdbfe;
@@ -16,6 +18,7 @@
 html{scroll-behavior:smooth}
 body{font-family:var(--font2);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 button{cursor:pointer;font-family:var(--font2)}
+a{color:inherit;text-decoration:none}
 svg{display:block}
 
 /* ── FOCUS / A11Y ── */
@@ -36,7 +39,7 @@ svg{display:block}
 .sb-logo{height:var(--nav);padding:0 18px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:8px}
 .logo-dots{display:flex;gap:3px}
 .logo-dots span{width:8px;height:8px;border-radius:50%;display:block}
-.logo-name{font-family:var(--font);font-weight:400;font-size:1.18rem;color:var(--text);letter-spacing:-.01em}
+.logo-name{font-family:"TAN Paradiso",var(--font);font-weight:400;font-size:1.5rem;color:var(--forest);letter-spacing:-.01em;line-height:1}
 .logo-name em{font-style:normal;color:var(--green)}
 .sb-user{padding:12px 16px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:9px}
 .sb-avatar{width:32px;height:32px;border-radius:9px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
@@ -162,11 +165,9 @@ svg{display:block}
 /* quiet category filter - small dot per category */
 .catfilter{display:flex;gap:8px;overflow-x:auto;padding:0 0 4px;margin-bottom:10px;scrollbar-width:none}
 .catfilter::-webkit-scrollbar{display:none}
-.cft{flex:none;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:100px;border:1.5px solid transparent;background:none;font-family:var(--font2);font-size:.78rem;font-weight:800;color:var(--muted);white-space:nowrap;transition:all .15s}
-.cft:hover{color:var(--text);background:var(--white)}
-.cft.on{color:var(--text);background:var(--white);border-color:var(--border);box-shadow:var(--shadow)}
-.cft i{width:8px;height:8px;border-radius:50%;flex:none;display:block}
-.cft.amber i{background:var(--amber)}.cft.blue i{background:var(--blue)}.cft.green i{background:var(--green)}.cft.violet i{background:var(--violet)}.cft.pink i{background:var(--pink)}
+.cft{flex:none;display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:100px;border:1.5px solid var(--border);background:var(--white);font-family:var(--font2);font-size:.78rem;font-weight:800;color:var(--muted);white-space:nowrap;transition:all .15s}
+.cft:hover{color:var(--forest);border-color:var(--green-mid)}
+.cft.on{color:#fff;background:var(--forest);border-color:var(--forest)}
 
 /* slim quick-packs strip */
 .packstrip-lbl{font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 2px 6px}
@@ -190,16 +191,11 @@ svg{display:block}
 .pcard{display:flex;flex-direction:column;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);transition:transform .18s var(--ease),border-color .18s,box-shadow .18s}
 .pcard:hover{transform:translateY(-3px);border-color:var(--green-mid);box-shadow:0 16px 34px rgba(0,0,0,.10)}
 .pcard.on{border-color:var(--green)}
-.pcard-img{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden}
+.pcard-img{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 38%,var(--white),var(--mint))}
 .pcard-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
 .pcard-art{position:absolute;inset:0;display:grid;place-items:center;padding:8px}
-.art-svg{width:42%;max-width:104px;height:auto;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.pcard-cat{position:absolute;top:10px;left:10px;z-index:2;font-size:.56rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--text);background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.05);padding:3px 9px;border-radius:100px}
-.pcard-img.amber{background:radial-gradient(circle at 50% 40%,#fff,var(--amber-pale))}.pcard-img.amber .art-svg{stroke:var(--amber)}
-.pcard-img.blue{background:radial-gradient(circle at 50% 40%,#fff,var(--blue-pale))}.pcard-img.blue .art-svg{stroke:var(--blue)}
-.pcard-img.green{background:radial-gradient(circle at 50% 40%,#fff,var(--green-pale))}.pcard-img.green .art-svg{stroke:var(--green-dark)}
-.pcard-img.violet{background:radial-gradient(circle at 50% 40%,#fff,var(--violet-pale))}.pcard-img.violet .art-svg{stroke:var(--violet)}
-.pcard-img.pink{background:radial-gradient(circle at 50% 40%,#fff,var(--pink-pale))}.pcard-img.pink .art-svg{stroke:var(--pink)}
+.art-svg{width:42%;max-width:104px;height:auto;fill:none;stroke:var(--forest);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pcard-cat{position:absolute;top:10px;left:10px;z-index:2;font-size:.56rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--forest);background:rgba(255,255,255,.92);border:1px solid var(--border);padding:3px 9px;border-radius:100px}
 .seal{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:var(--green);border:2px solid #fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.18);z-index:2}
 .seal svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .pcard-body{display:flex;flex-direction:column;flex:1;padding:14px 16px 16px}
@@ -233,6 +229,35 @@ svg{display:block}
 
 /* tabular figures wherever prices align */
 .tot,.line .lp,.hero-val,.hero-stat-val,.ord-tot,.cart-bar .c1,.cart-top{font-variant-numeric:tabular-nums}
+
+/* ── PRODUCT DETAIL ── */
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:800;color:var(--muted);margin-bottom:16px;padding:6px 12px 6px 8px;border-radius:100px;transition:all .15s}
+.back-link:hover{color:var(--forest);background:var(--green-pale)}
+.back-link svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.detail{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+.detail-media{position:sticky;top:calc(var(--nav) + 16px)}
+.detail-photo{position:relative;aspect-ratio:4/3;border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--border);background:radial-gradient(circle at 50% 38%,var(--white),var(--mint));display:grid;place-items:center}
+.detail-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.detail-photo .art-svg{width:34%;max-width:160px}
+.detail-thumbs{display:flex;gap:10px;margin-top:12px}
+.detail-thumb{width:64px;height:64px;border-radius:12px;border:1.5px solid var(--border);background:radial-gradient(circle at 50% 40%,var(--white),var(--mint));display:grid;place-items:center;flex-shrink:0}
+.detail-thumb.active{border-color:var(--green);box-shadow:0 0 0 2px var(--green-mid)}
+.detail-thumb .art-svg{width:48%}
+.detail-cat{display:inline-block;font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--forest);background:var(--green-pale);border:1px solid var(--green-mid);padding:4px 10px;border-radius:100px}
+.detail-name{font-family:var(--font);font-size:1.75rem;color:var(--text);letter-spacing:-.02em;line-height:1.08;margin:12px 0 6px}
+.detail-spec{font-size:.9rem;font-weight:600;color:var(--muted)}
+.detail-verified{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-size:.76rem;font-weight:800;color:var(--forest);background:var(--green-pale);border:1.5px solid var(--green-mid);padding:7px 13px;border-radius:100px}
+.detail-verified svg{width:14px;height:14px;stroke:var(--forest);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.detail-price-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:18px 0 4px;font-variant-numeric:tabular-nums}
+.detail-price-row b{font-family:var(--font);font-size:2rem;color:var(--text);letter-spacing:-.02em}
+.detail-price-row .du{font-size:.82rem;font-weight:700;color:var(--muted)}
+.detail-price-row s{font-size:.95rem;font-weight:700;color:var(--muted)}
+.detail-ctrl{margin-top:18px}
+.detail-cta{margin-top:10px}
+.transparency{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:4px 16px 14px;margin:18px 0 0}
+.detail-note{display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;color:var(--muted);margin-top:14px}
+.detail-note svg{width:15px;height:15px;stroke:var(--forest);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+@media (max-width:760px){.detail{grid-template-columns:1fr;gap:18px}.detail-media{position:static}.detail-name{font-size:1.5rem}.detail-price-row b{font-size:1.7rem}}
 
 /* ── ORDER CARD / TRACKER ── */
 .ord-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
