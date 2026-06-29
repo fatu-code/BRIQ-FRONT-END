@@ -185,7 +185,9 @@ window.addEventListener("offline",()=>{ S.offline=true; toast("You're offline - 
 function renderChrome(){
   const av = S.view==="detail" ? "materials" : S.view;
   // topbar
-  $("tbTitle").textContent = S.view==="detail" ? ((M(S.detailId)||{}).name || "Product") : VIEWS[S.view].title;
+  const pageTitle = S.view==="detail" ? ((M(S.detailId)||{}).name || "Product") : VIEWS[S.view].title;
+  $("tbTitle").textContent = pageTitle;
+  document.title = pageTitle + " · Briq";
   $("tbSub").textContent = S.offline ? "Briq · Jinja · sample data" : "Briq · Jinja";
   // cart top button (desktop)
   const ct=$("cartTop");
@@ -345,7 +347,6 @@ function viewDetail(){
   <div class="detail">
     <div class="detail-media">
       <div class="detail-photo"><span class="pcard-art" aria-hidden="true">${artFor(m)}</span>${img}${seal}</div>
-      <div class="detail-thumbs"><div class="detail-thumb active">${artFor(m)}</div></div>
     </div>
     <div class="detail-info">
       <span class="detail-cat">${m.group}</span>
