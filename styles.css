@@ -36,8 +36,10 @@ svg{display:block}
 
 /* ── SIDEBAR ── */
 .sidebar{width:var(--sidebar);background:var(--white);border-right:1.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sb-logo{height:var(--nav);padding:0 18px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:8px}
-.logo-name{font-family:"TAN Paradiso",var(--font);font-weight:400;font-size:1.5rem;color:var(--forest);letter-spacing:-.01em;line-height:1}
+.sb-logo{height:var(--nav);padding:0 18px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-mark{width:30px;height:30px;border-radius:9px;overflow:hidden;flex-shrink:0;line-height:0;box-shadow:0 4px 10px rgba(0,77,30,.30)}
+.logo-mark svg{width:30px;height:30px;display:block}
+.logo-name{font-family:"Papyrus","TAN Paradiso",var(--font);font-weight:700;font-size:1.5rem;color:var(--forest);letter-spacing:.01em;line-height:1}
 .logo-name em{font-style:normal;color:var(--green)}
 .sb-user{padding:12px 16px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:9px}
 .sb-avatar{width:32px;height:32px;border-radius:9px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
