@@ -239,6 +239,9 @@ async function boot(){
     try{ const pr=await api("/api/projects"); S.projects=pr.projects; if(pr.projects[0])S.active=pr.projects[0].id; }catch(e){}
     await loadOrders();
   }catch(e){ S.offline=true; S.materials=FB; S.packs=FB_PACKS; }
+  // Equipment. TODO: real endpoint /api/equipment; falls back to bundled list for now.
+  try{ const eq=await api("/api/equipment"); S.equipment=(eq&&eq.equipment&&eq.equipment.length)?eq.equipment:EQUIP; }
+  catch(e){ S.equipment=EQUIP; }
   S.loading=false; render();
 }
 
