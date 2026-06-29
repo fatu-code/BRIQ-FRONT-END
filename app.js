@@ -1,6 +1,8 @@
 /* Briq - responsive web app, BGS design language. Talks to the live Railway API. */
 const API = (window.BRIK_CONFIG && window.BRIK_CONFIG.API_BASE) || "http://localhost:4000";
 const FEE = 0.06;
+// UGX has no denomination below 100 - round every Briq price to a clean hundred.
+const r100 = (n) => Math.round(n / 100) * 100;
 const SLOTS = ["Tomorrow AM", "Tomorrow PM", "In 2 days AM", "In 2 days PM"];
 const STATUS = ["Placed", "Confirming", "Out for delivery", "Delivered"];
 const GROUPS = ["Cement", "Steel", "Blocks", "Aggregates", "Roofing"];
@@ -35,8 +37,8 @@ const FB = [
   ["sheet-28","Iron sheets G28","Box profile · 3m","Roofing","sheet",38000,45000,0],
   ["nails","Nails","Assorted · per kg","Roofing","kg",6000,7200,0],
 ].map(([id,name,spec,group,unit,supplier,retail,v]) => {
-  const brik = Math.round(supplier*(1+FEE));
-  return { id,name,spec,group,unit,supplier,retail,verified:!!v,brik,fee:Math.round(supplier*FEE),save:retail-brik };
+  const brik = r100(supplier*(1+FEE));
+  return { id,name,spec,group,unit,supplier,retail,verified:!!v,brik,fee:brik-supplier,save:retail-brik };
 });
 // TODO: fetch from /api/equipment once the backend exposes it. Shape mirrors materials.
 const EQUIP = [
@@ -244,7 +246,7 @@ async function boot(){
   S.loading=true; render();
   try{
     const [m,p]=await Promise.all([api("/api/materials"),api("/api/packs")]);
-    S.materials=m.materials; S.packs=p.packs;
+    S.materials=m.materials.map(x=>{ const brik=r100(x.brik); return {...x, brik, fee:brik-x.supplier, save:x.retail-brik}; }); S.packs=p.packs;
     try{ const pr=await api("/api/projects"); S.projects=pr.projects; if(pr.projects[0])S.active=pr.projects[0].id; }catch(e){}
     await loadOrders();
   }catch(e){ S.offline=true; S.materials=FB; S.packs=FB_PACKS; }

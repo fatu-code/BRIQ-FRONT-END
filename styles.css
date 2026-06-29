@@ -2404,6 +2404,10 @@ select.pf-input {
   }
 }
 @media (max-width: 768px) {
+  /* Mobile: sell the value, not a price war. Show the rate, hide the retail comparison. */
+  .pcard-price s {
+    display: none;
+  }
   .sidebar {
     position: fixed;
     left: -272px;
