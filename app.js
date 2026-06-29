@@ -11,10 +11,12 @@ const VIEWS = {
   equipment: { title: "Equipment", icon: "wrench" },
   professionals: { title: "Professionals", icon: "people" },
   orders: { title: "My orders", icon: "receipt" },
+  requests: { title: "My requests", icon: "clipboard" },
   why: { title: "Why Briq", icon: "shield" },
 };
-// Only the three core browse layers live in the sidebar / bottom nav.
+// Sidebar groups: BROWSE (the three layers) + ACTIVITY (your own history).
 const NAV = ["materials", "equipment", "professionals"];
+const NAV2 = ["orders", "requests"];
 const EQGROUPS = ["Mixing", "Compaction", "Access", "Power", "Hand tools"];
 const PROGROUPS = ["Structural Engineer", "Architect", "Mason"];
 
@@ -85,13 +87,16 @@ function pulse(el){ if(!el)return; el.classList.remove("pulse"); void el.offsetW
 
 /* ── CUSTOMER PROFILE (phase 1: on-device, attaches to orders) ── */
 S.profile = (function(){ try{ return JSON.parse(localStorage.getItem("briq-profile")||"null"); }catch(e){ return null; } })();
+S.requests = (function(){ try{ return JSON.parse(localStorage.getItem("briq-requests")||"[]"); }catch(e){ return []; } })();
 let _afterProfile=null;
 function saveProfileObj(p){ try{ localStorage.setItem("briq-profile",JSON.stringify(p)); }catch(e){} }
+function saveRequests(){ try{ localStorage.setItem("briq-requests",JSON.stringify(S.requests)); }catch(e){} }
+function reqDate(){ try{ return new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short"}); }catch(e){ return ""; } }
 function initials(name){ const p=String(name||"").trim().split(/\s+/); return (((p[0]||"")[0]||"")+((p[1]||"")[0]||"")).toUpperCase()||"?"; }
 
 /* ── ROUTER (client-side, deep-linkable) ── */
 const FILE = location.protocol === "file:";
-const VIEW_PATH = { materials:"/products", equipment:"/equipment", professionals:"/professionals", orders:"/orders", why:"/why" };
+const VIEW_PATH = { materials:"/products", equipment:"/equipment", professionals:"/professionals", orders:"/orders", requests:"/requests", why:"/why" };
 function currentPath(){
   if(FILE) return (location.hash || "").replace(/^#/,"") || "/products";
   return location.pathname.replace(/\/index\.html$/,"") || "/products";
@@ -114,6 +119,7 @@ function route(){
   else if(path==="/equipment") S.view="equipment";
   else if(path==="/professionals") S.view="professionals";
   else if(path==="/orders") S.view="orders";
+  else if(path==="/requests") S.view="requests";
   else if(path==="/why") S.view="why";
   else S.view="materials";
   closeSidebar();
@@ -155,6 +161,7 @@ function I(name, s = 16) {
     user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
     wrench:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.1-3.1a6 6 0 01-7.9 7.9l-6.2 6.2a2.1 2.1 0 01-3-3l6.2-6.2a6 6 0 017.9-7.9z"/>',
     people:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><path d="M15.5 5.2a3.2 3.2 0 010 5.6"/><path d="M17.5 14c2.6.6 4 2.9 4 6"/>',
+    clipboard:'<rect x="5" y="4" width="14" height="17" rx="2"/><rect x="8.5" y="2.5" width="7" height="3.5" rx="1"/><path d="M9 11h6M9 15h4"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" aria-hidden="true" focusable="false">${P[name]||""}</svg>`;
 }
@@ -294,12 +301,13 @@ function renderChrome(){
   if(count()>0){ ct.style.display="inline-flex"; ct.setAttribute("aria-label",`Review order, ${count()} item${count()>1?"s":""}, total ${fmt(grand())}`); ct.innerHTML=`${I("cart",14)} ${fmt(grand())} · ${count()}`; }
   else ct.style.display="none";
   // sidebar nav
-  $("sbNav").innerHTML = `<div class="nav-section">Browse</div>` + NAV.map(v=>{
-    const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
-    const badge = (v==="materials"&&count()>0)?`<span class="nav-badge">${count()}</span>`:(v==="orders"&&S.orders.length?`<span class="nav-badge">${S.orders.length}</span>`:"");
+  const navItem = (v)=>{
+    const cnt = v==="materials"?count():(v==="orders"?S.orders.length:(v==="requests"?S.requests.length:0));
+    const badge = cnt>0?`<span class="nav-badge">${cnt}</span>`:"";
     const lbl = cnt>0?` aria-label="${VIEWS[v].title}, ${cnt}"`:"";
     return `<button class="nav-item ${av===v?"active":""}"${av===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="nav-icon">${I(VIEWS[v].icon,14)}</span><span class="nav-label">${VIEWS[v].title}</span>${badge}</button>`;
-  }).join("");
+  };
+  $("sbNav").innerHTML = `<div class="nav-section">Browse</div>` + NAV.map(navItem).join("") + `<div class="nav-section">Activity</div>` + NAV2.map(navItem).join("");
   // bottom nav
   $("bottomNav").innerHTML = `<div class="bn-row">` + NAV.map(v=>{
     const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
@@ -327,6 +335,7 @@ function render(){
   else if(S.view==="professionals") c.innerHTML=viewPros();
   else if(S.view==="prodetail") c.innerHTML=viewProDetail();
   else if(S.view==="orders") c.innerHTML=viewOrders();
+  else if(S.view==="requests") c.innerHTML=viewRequests();
   else c.innerHTML=viewWhy();
 }
 
@@ -534,6 +543,8 @@ async function requestEquipment(){
   const payload={ equipmentId:e.id, name:e.name, days:S.days||1, startDate:S.startDate||null, customer:S.profile };
   // TODO: POST to /api/equipment-requests once the backend exposes it; this is a manual request, no availability engine.
   try{ await api("/api/equipment-requests",{method:"POST",body:JSON.stringify(payload)}); }catch(err){}
+  S.requests.unshift({ type:"equipment", id:e.id, name:e.name, days:S.days||1, startDate:S.startDate||"", date:reqDate() });
+  saveRequests(); renderChrome();
   toast("Request sent - we'll confirm availability & deposit");
 }
 function viewEquipDetail(){
@@ -716,6 +727,8 @@ async function submitProReq(){
   const payload={ proId:p.id, proName:p.name, name, phone, brief:{ need:$("rqNeed").value, type:$("rqType").value, location:$("rqLoc").value.trim(), plot:$("rqPlot").value.trim(), stage:$("rqStage").value, budget:$("rqBudget").value } };
   // TODO: POST to /api/pro-requests once the backend exposes it; this is a lead Briq fulfils manually.
   try{ await api("/api/pro-requests",{method:"POST",body:JSON.stringify(payload)}); }catch(err){}
+  S.requests.unshift({ type:"pro", id:p.id, name:p.name, discipline:p.discipline, brief:payload.brief, date:reqDate() });
+  saveRequests();
   closeProReq(); renderChrome(); toast(`Briq will connect you with ${p.name} shortly`);
 }
 
@@ -736,6 +749,23 @@ function viewOrders(){
   return `<div class="member-hero"><div class="hero-lbl">Saved with Briq</div><div class="hero-val">${fmt(cum)}</div><div class="hero-note">vs buying at retail, across ${S.orders.length} order${S.orders.length>1?"s":""}</div>
     <div class="hero-stats"><div class="hero-stat"><div class="hero-stat-val">${S.orders.length}</div><div class="hero-stat-lbl">Orders</div></div><div class="hero-stat"><div class="hero-stat-val">${moved}</div><div class="hero-stat-lbl">Items moved</div></div></div></div>
     <h2 class="card-title" style="margin:2px 2px 12px">Recent orders</h2>${cards}`;
+}
+
+function viewRequests(){
+  if(!S.requests.length) return `<div class="card"><div class="empty-state"><div class="empty-icon">${I("clipboard",24)}</div><div class="empty-title">No requests yet</div><div class="empty-sub">Rent equipment or request a professional and it'll show here, ready for Briq to confirm.</div></div></div>`;
+  const cards=S.requests.map(r=>{
+    const isEq=r.type==="equipment";
+    const ic=isEq?I("wrench",16):I("people",16);
+    const sub=isEq
+      ? `Rental · ${r.days} day${r.days>1?"s":""}${r.startDate?` · from ${r.startDate}`:""}`
+      : `${r.discipline||"Professional"}${r.brief&&r.brief.need?` · ${r.brief.need}`:""}`;
+    return `<div class="card req-card">
+      <span class="req-ic">${ic}</span>
+      <div class="req-body"><div class="req-name">${r.name}</div><div class="req-sub">${sub}</div><div class="req-date">Requested ${r.date||""}</div></div>
+      <span class="pill pill-green">${I("check",11)}Requested</span>
+    </div>`;
+  }).join("");
+  return `<h2 class="card-title" style="margin:2px 2px 14px">My requests</h2>${cards}`;
 }
 
 function viewWhy(){
