@@ -65,9 +65,11 @@ svg{display:block}
 .sidebar-panel{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;margin:12px 16px 0}
 .sidebar-panel .panel-title{font-size:.82rem;font-weight:900;color:var(--text);margin-bottom:8px}
 .sidebar-panel .panel-note{font-size:.72rem;font-weight:600;color:var(--muted);line-height:1.5;margin-bottom:12px}
-.sb-bottom{padding:12px 16px;border-top:1.5px solid var(--border);margin-top:auto}
-.sb-bottom-text{font-size:.65rem;font-weight:600;color:var(--muted);line-height:1.5}
-.sb-bottom-text strong{color:var(--text)}
+.sb-bottom{display:flex;gap:10px;align-items:flex-start;padding:16px;border-top:1.5px solid var(--border);margin-top:auto}
+.sb-verify-ic{width:30px;height:30px;border-radius:9px;background:var(--green-pale);border:1.5px solid var(--green-mid);display:grid;place-items:center;flex-shrink:0}
+.sb-verify-ic svg{width:15px;height:15px;stroke:var(--forest)}
+.sb-verify-h{font-size:.72rem;font-weight:900;color:var(--text);letter-spacing:.01em}
+.sb-verify-p{font-size:.66rem;font-weight:600;color:var(--muted);line-height:1.55;margin-top:3px}
 
 /* ── MAIN ── */
 .main-area{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -262,6 +264,41 @@ svg{display:block}
 .detail-note{display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;color:var(--muted);margin-top:14px}
 .detail-note svg{width:15px;height:15px;stroke:var(--forest);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
 @media (max-width:760px){.detail{grid-template-columns:1fr;gap:18px}.detail-media{position:static}.detail-name{font-size:1.5rem}.detail-price-row b{font-size:1.7rem}}
+
+/* equipment line-art matches the materials art weight despite a tighter viewBox */
+.art-svg.eq-art{stroke-width:1.1}
+
+/* ── EQUIPMENT RENTAL BLOCK (detail) ── */
+.rental{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin:18px 0 14px}
+.rental-row{margin-bottom:12px}
+.rental-row:last-child{margin-bottom:0}
+.rental-row .form-label{display:block;margin-bottom:6px}
+.rental-step{width:auto;max-width:148px}
+.rental-total{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1.5px solid var(--border);margin-top:14px;padding-top:14px}
+.rental-total>span:first-child{font-size:.82rem;font-weight:800;color:var(--text)}
+.rt-val{text-align:right;font-variant-numeric:tabular-nums}
+.rt-val b{display:block;font-family:var(--font);font-size:1.5rem;color:var(--text);letter-spacing:-.02em;line-height:1.05}
+.rt-sub{font-size:.68rem;font-weight:700;color:var(--muted)}
+.detail-fineprint{font-size:.72rem;font-weight:600;color:var(--muted);text-align:center;margin-top:10px}
+
+/* ── PROFESSIONALS (people) ── */
+.pro-group+.pro-group{margin-top:28px}
+.procard .pcard-img{aspect-ratio:4/5}
+.procard .pcard-art .art-svg{width:36%}
+.detail-photo.portrait{aspect-ratio:4/5}
+.pro-bio{font-size:.86rem;font-weight:600;color:var(--muted);line-height:1.6;margin-top:14px}
+.creds{margin:18px 0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.cred{display:flex;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);font-size:.82rem}
+.cred:last-child{border-bottom:none}
+.cred>span:first-child{color:var(--muted);font-weight:700}
+.cred>span:last-child{color:var(--text);font-weight:800;text-align:right}
+.portfolio{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.folio{position:relative;aspect-ratio:4/3;border-radius:var(--radius-sm);overflow:hidden;border:1.5px solid var(--border);background:radial-gradient(circle at 50% 40%,var(--white),var(--mint));display:grid;place-items:center}
+.folio img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.folio-ph svg{width:22px;height:22px;stroke:var(--forest);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.req-intro{font-size:.82rem;font-weight:600;color:var(--muted);line-height:1.55;margin-bottom:14px}
+.req-fine{font-size:.7rem;font-weight:600;color:var(--muted);line-height:1.55;margin-top:12px;text-align:center}
+@media (max-width:560px){.portfolio{grid-template-columns:repeat(2,1fr)}}
 
 /* ── ORDER CARD / TRACKER ── */
 .ord-head{display:flex;align-items:center;justify-content:space-between;gap:8px}

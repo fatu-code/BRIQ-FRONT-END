@@ -9,10 +9,14 @@ const GICON = { Cement: "cement", Steel: "steel", Blocks: "block", Aggregates: "
 const VIEWS = {
   materials: { title: "Products", icon: "grid" },
   equipment: { title: "Equipment", icon: "wrench" },
+  professionals: { title: "Professionals", icon: "people" },
   orders: { title: "My orders", icon: "receipt" },
   why: { title: "Why Briq", icon: "shield" },
 };
+// Only the three core browse layers live in the sidebar / bottom nav.
+const NAV = ["materials", "equipment", "professionals"];
 const EQGROUPS = ["Mixing", "Compaction", "Access", "Power", "Hand tools"];
+const PROGROUPS = ["Structural Engineer", "Architect", "Mason"];
 
 const FB = [
   ["cem-hima","Cement - Hima","50kg · OPC 42.5N","Cement","bag",38000,44000,1],
@@ -51,6 +55,19 @@ const EQUIP = [
   ["angle-grinder","Angle grinder","230mm · heavy duty","Hand tools",15000,0],
   ["laser-level","Laser level","Self-levelling · tripod","Hand tools",30000,1],
 ].map(([id,name,spec,category,rate,v]) => ({ id,name,spec,category,unit:"day",rate,verified:!!v }));
+// TODO: fetch from /api/professionals once the backend exposes it. Portraits at images/pros/{id}.jpg.
+const PRO = [
+  ["mukasa","Eng. David Mukasa","Structural Engineer","Kampala",14,"ERB 2456","RC frames & multi-storey","Fourteen years designing reinforced-concrete frames for commercial and residential buildings across central Uganda."],
+  ["nabirye","Eng. Sarah Nabirye","Structural Engineer","Jinja",9,"ERB 3187","Foundations & retaining walls","Specialist in foundations and retaining structures on the soft soils around the lake basin."],
+  ["okello","Eng. Patrick Okello","Structural Engineer","Mbale",12,"ERB 2789","Steel & industrial sheds","Steel-portal and warehouse specialist; twelve years on industrial projects in the east."],
+  ["kato","Eng. Joseph Kato","Structural Engineer","Kampala",18,"ERB 1620","High-rise & design review","Senior structural engineer; reviews and stamps designs for taller buildings."],
+  ["auma","Eng. Grace Auma","Structural Engineer","Iganga",7,"ERB 3902","Homes, schools & clinics","Designs homes, schools and clinics; known for economical, build-able details."],
+  ["ssali","Eng. Henry Ssali","Structural Engineer","Mukono",10,"ERB 2998","Slabs & suspended floors","Suspended-slab and beam specialist for multi-level homes."],
+  ["tumwine","Eng. Alex Tumwine","Structural Engineer","Kampala",6,"ERB 4120","Site supervision & QA","Site engineer for structural supervision and quality checks during construction."],
+  ["namutebi","Arch. Maria Namutebi","Architect","Kampala",11,"AU 845","Residential & mixed-use","Architect blending modern and contextual design for homes and small commercial blocks."],
+  ["wasswa","Arch. Brian Wasswa","Architect","Jinja",8,"AU 1203","Homes & interiors","Residential architect focused on natural light, ventilation and honest materials."],
+  ["mugisha","Robert Mugisha","Mason","Jinja",20,"Briq Trade 014","Brickwork & finishing","Master mason; twenty years of clean blockwork, plaster and finishing."],
+].map(([id,name,discipline,region,years,registration,specialisation,bio]) => ({ id,name,discipline,region,years,registration,specialisation,bio,verified:true,portfolio:[id+"-a",id+"-b",id+"-c"] }));
 const FB_PACKS = [
   { id:"foundation", name:"Foundation", note:"Strip footing", items:{ "cem-hima":20, hardcore:6, ballast:4, "sand-river":4, "bar-y12":15, wire:3 } },
   { id:"slab", name:"Slab", note:"Suspended floor", items:{ "cem-hima":25, ballast:5, "sand-river":4, "bar-y12":20, brc:8, wire:4 } },
@@ -61,7 +78,7 @@ const FB_PACKS = [
 let clientId = localStorage.getItem("briq-client");
 if (!clientId) { clientId = "c" + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("briq-client", clientId); }
 
-const S = { view:"materials", cart:{}, materials:[], equipment:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:"all", query:"", eqCat:"all", eqQuery:"", days:1, startDate:"", _lc:0 };
+const S = { view:"materials", cart:{}, materials:[], equipment:[], pros:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:"all", query:"", eqCat:"all", eqQuery:"", days:1, startDate:"", proCat:"all", proQuery:"", reqProId:"", _lc:0 };
 const IMGBAD = new Set();
 function imgFail(id,el){ IMGBAD.add(id); if(el)el.remove(); }
 function pulse(el){ if(!el)return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
@@ -74,7 +91,7 @@ function initials(name){ const p=String(name||"").trim().split(/\s+/); return ((
 
 /* ── ROUTER (client-side, deep-linkable) ── */
 const FILE = location.protocol === "file:";
-const VIEW_PATH = { materials:"/products", equipment:"/equipment", orders:"/orders", why:"/why" };
+const VIEW_PATH = { materials:"/products", equipment:"/equipment", professionals:"/professionals", orders:"/orders", why:"/why" };
 function currentPath(){
   if(FILE) return (location.hash || "").replace(/^#/,"") || "/products";
   return location.pathname.replace(/\/index\.html$/,"") || "/products";
@@ -90,9 +107,12 @@ function route(){
   const path=currentPath();
   const pm=path.match(/^\/products\/(.+)$/);
   const em=path.match(/^\/equipment\/(.+)$/);
+  const rm=path.match(/^\/professionals\/(.+)$/);
   if(pm){ S.view="detail"; S.detailId=decodeURIComponent(pm[1]); }
   else if(em){ S.view="eqdetail"; S.detailId=decodeURIComponent(em[1]); S.days=1; S.startDate=""; }
+  else if(rm){ S.view="prodetail"; S.detailId=decodeURIComponent(rm[1]); }
   else if(path==="/equipment") S.view="equipment";
+  else if(path==="/professionals") S.view="professionals";
   else if(path==="/orders") S.view="orders";
   else if(path==="/why") S.view="why";
   else S.view="materials";
@@ -106,6 +126,7 @@ const fmt = (n) => "UGX " + Math.round(n).toLocaleString("en-UG");
 const sh = (n) => Math.round(n).toLocaleString("en-UG");
 const M = (id) => S.materials.find((m) => m.id === id);
 const E = (id) => S.equipment.find((e) => e.id === id);
+const P = (id) => S.pros.find((x) => x.id === id);
 const $ = (id) => document.getElementById(id);
 
 async function api(path, opts = {}) {
@@ -133,6 +154,7 @@ function I(name, s = 16) {
     back:'<path d="M19 12H5M11 18l-6-6 6-6"/>',
     user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
     wrench:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.1-3.1a6 6 0 01-7.9 7.9l-6.2 6.2a2.1 2.1 0 01-3-3l6.2-6.2a6 6 0 017.9-7.9z"/>',
+    people:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><path d="M15.5 5.2a3.2 3.2 0 010 5.6"/><path d="M17.5 14c2.6.6 4 2.9 4 6"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" aria-hidden="true" focusable="false">${P[name]||""}</svg>`;
 }
@@ -242,6 +264,9 @@ async function boot(){
   // Equipment. TODO: real endpoint /api/equipment; falls back to bundled list for now.
   try{ const eq=await api("/api/equipment"); S.equipment=(eq&&eq.equipment&&eq.equipment.length)?eq.equipment:EQUIP; }
   catch(e){ S.equipment=EQUIP; }
+  // Professionals. TODO: real endpoint /api/professionals; falls back to bundled list for now.
+  try{ const pp=await api("/api/professionals"); S.pros=(pp&&pp.professionals&&pp.professionals.length)?pp.professionals:PRO; }
+  catch(e){ S.pros=PRO; }
   S.loading=false; render();
 }
 
@@ -250,10 +275,11 @@ window.addEventListener("offline",()=>{ S.offline=true; toast("You're offline - 
 
 /* ── RENDER ── */
 function renderChrome(){
-  const av = S.view==="detail" ? "materials" : (S.view==="eqdetail" ? "equipment" : S.view);
+  const av = S.view==="detail" ? "materials" : S.view==="eqdetail" ? "equipment" : S.view==="prodetail" ? "professionals" : S.view;
   // topbar
   const pageTitle = S.view==="detail" ? ((M(S.detailId)||{}).name || "Product")
     : S.view==="eqdetail" ? ((E(S.detailId)||{}).name || "Equipment")
+    : S.view==="prodetail" ? ((P(S.detailId)||{}).name || "Professional")
     : VIEWS[S.view].title;
   $("tbTitle").textContent = pageTitle;
   document.title = pageTitle + " · Briq";
@@ -268,14 +294,14 @@ function renderChrome(){
   if(count()>0){ ct.style.display="inline-flex"; ct.setAttribute("aria-label",`Review order, ${count()} item${count()>1?"s":""}, total ${fmt(grand())}`); ct.innerHTML=`${I("cart",14)} ${fmt(grand())} · ${count()}`; }
   else ct.style.display="none";
   // sidebar nav
-  $("sbNav").innerHTML = `<div class="nav-section">Browse</div>` + Object.keys(VIEWS).map(v=>{
+  $("sbNav").innerHTML = `<div class="nav-section">Browse</div>` + NAV.map(v=>{
     const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
     const badge = (v==="materials"&&count()>0)?`<span class="nav-badge">${count()}</span>`:(v==="orders"&&S.orders.length?`<span class="nav-badge">${S.orders.length}</span>`:"");
     const lbl = cnt>0?` aria-label="${VIEWS[v].title}, ${cnt}"`:"";
     return `<button class="nav-item ${av===v?"active":""}"${av===v?' aria-current="page"':""}${lbl} onclick="go('${v}')"><span class="nav-icon">${I(VIEWS[v].icon,14)}</span><span class="nav-label">${VIEWS[v].title}</span>${badge}</button>`;
   }).join("");
   // bottom nav
-  $("bottomNav").innerHTML = `<div class="bn-row">` + Object.keys(VIEWS).map(v=>{
+  $("bottomNav").innerHTML = `<div class="bn-row">` + NAV.map(v=>{
     const cnt = v==="materials"?count():(v==="orders"?S.orders.length:0);
     const badge=(v==="materials"&&count()>0)?`<span class="bn-badge">${count()}</span>`:"";
     const lbl = cnt>0?` aria-label="${VIEWS[v].title}, ${cnt}"`:"";
@@ -290,15 +316,16 @@ function renderChrome(){
 }
 function render(){
   renderChrome();
-  renderProjectPanel();
   // content
   const c=$("content");
   c.setAttribute("aria-busy", S.loading?"true":"false");
-  if(S.loading && ["materials","detail","equipment","eqdetail"].includes(S.view)) c.innerHTML = (S.view==="detail"||S.view==="eqdetail") ? viewDetailSkeleton() : viewSkeleton();
+  if(S.loading && ["materials","detail","equipment","eqdetail","professionals","prodetail"].includes(S.view)) c.innerHTML = ["detail","eqdetail","prodetail"].includes(S.view) ? viewDetailSkeleton() : viewSkeleton();
   else if(S.view==="materials") c.innerHTML=viewMaterials();
   else if(S.view==="detail") c.innerHTML=viewDetail();
   else if(S.view==="equipment") c.innerHTML=viewEquipment();
   else if(S.view==="eqdetail") c.innerHTML=viewEquipDetail();
+  else if(S.view==="professionals") c.innerHTML=viewPros();
+  else if(S.view==="prodetail") c.innerHTML=viewProDetail();
   else if(S.view==="orders") c.innerHTML=viewOrders();
   else c.innerHTML=viewWhy();
 }
@@ -309,14 +336,6 @@ function viewSkeleton(){
     <div class="mgrid">${cards}</div>`;
 }
 
-function renderProjectPanel(){
-  const sel = S.projects.length
-    ? `<select class="psel" aria-label="Active project" onchange="S.active=this.value">${S.projects.map(p=>`<option value="${p.id}" ${p.id===S.active?"selected":""}>${p.name}</option>`).join("")}</select>`
-    : `<div class="panel-note">No project yet. Add one to group your orders by site.</div>`;
-  const form = S.adding
-    ? `<div class="pform"><input id="npName" aria-label="Project name" placeholder="Project name (e.g. Wanyange duplex)"><input id="npSite" aria-label="Site location" placeholder="Site (e.g. Plot 14, Wanyange)"><button class="btn btn-green btn-sm" onclick="createProject()">Save project</button></div>` : "";
-  $("projPanel").innerHTML = `<div class="panel-title">Project</div>${sel}<button class="btn btn-sm" style="width:100%;justify-content:center" onclick="toggleAdd()">${S.adding?"Cancel":"+ New project"}</button>${form}`;
-}
 
 function matFor(){
   const q=S.query.trim().toLowerCase();
@@ -444,6 +463,262 @@ function viewDetail(){
   </div>`;
 }
 
+/* ── EQUIPMENT (rental twin of Products) ── */
+const EQART = {
+  "Mixing":'<ellipse cx="10" cy="9" rx="5" ry="4"/><path d="M6 12l-2 8M14 12l2 8"/><path d="M8 7l4 4"/><path d="M15 9h4l-2 3"/>',
+  "Compaction":'<rect x="4" y="16" width="12" height="3.5" rx="1"/><path d="M10 16V9l6-4"/><path d="M14 4.5h4"/>',
+  "Access":'<rect x="4" y="4" width="14" height="16" rx="1"/><path d="M4 9.3h14M4 14.6h14M11 4v16"/>',
+  "Power":'<rect x="3" y="9" width="16" height="10" rx="1.5"/><circle cx="8.5" cy="14" r="2.6"/><path d="M15 12v4"/><path d="M6 9l1.3-2h7L16 9"/>',
+  "Hand tools":'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.1-3.1a6 6 0 01-7.9 7.9l-6.2 6.2a2.1 2.1 0 01-3-3l6.2-6.2a6 6 0 017.9-7.9z"/>',
+};
+function eqArt(e){ return `<svg class="art-svg eq-art" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${EQART[e.category]||EQART["Hand tools"]}</svg>`; }
+function ecard(e){
+  const img = IMGBAD.has(e.id) ? "" : `<img src="images/${e.id}.jpg" alt="${e.name}" loading="lazy" onerror="imgFail('${e.id}',this)">`;
+  const seal = e.verified ? `<span class="seal" role="img" aria-label="Briq-checked, working condition" title="Briq-checked, working condition">${I("check",13)}</span>` : "";
+  return `<a class="pcard" href="${routeHref('/equipment/'+e.id)}" onclick="return navClick(event,'/equipment/${e.id}')" aria-label="${e.name}, ${fmt(e.rate)} per day">
+    <div class="pcard-img"><span class="pcard-art" aria-hidden="true">${eqArt(e)}</span>${img}<span class="pcard-cat">${e.category}</span>${seal}</div>
+    <div class="pcard-body">
+      <div class="pcard-name">${e.name}</div>
+      <div class="pcard-spec">${e.spec}</div>
+      <div class="pcard-price"><b>${fmt(e.rate)}</b><span class="pcard-unit">/ day</span></div>
+    </div>
+  </a>`;
+}
+function eqCatBar(){
+  const searching=S.eqQuery.trim().length>0;
+  const allOn=!searching && S.eqCat==="all";
+  let out=`<button class="cft ${allOn?"on":""}"${allOn?' aria-current="true"':""} onclick="setEqCat('all')">All</button>`;
+  out+=EQGROUPS.map(g=>{
+    const on=!searching && S.eqCat===g;
+    return `<button class="cft ${on?"on":""}"${on?' aria-current="true"':""} onclick="setEqCat('${g}')">${g}</button>`;
+  }).join("");
+  return out;
+}
+function eqMatFor(){
+  const q=S.eqQuery.trim().toLowerCase();
+  if(q) return S.equipment.filter(e=>(e.name+" "+e.spec+" "+e.category).toLowerCase().includes(q));
+  if(S.eqCat==="all") return S.equipment;
+  return S.equipment.filter(e=>e.category===S.eqCat);
+}
+function eqGridSection(){
+  const searching=S.eqQuery.trim().length>0;
+  const list=eqMatFor();
+  const title=searching?"Results":(S.eqCat==="all"?"All equipment":S.eqCat);
+  const head=`<div class="grid-head"><h2 class="card-title">${title}</h2>${searching?`<button class="link-btn" onclick="eqClearSearch()">Clear search</button>`:`<span class="grid-count">${list.length} item${list.length!==1?"s":""}</span>`}</div>`;
+  if(!list.length) return head+`<div class="card"><div class="empty-state"><div class="empty-icon">${I("search",24)}</div><div class="empty-title">No equipment matches “${S.eqQuery.trim()}”</div><div class="empty-sub">Try another term, or pick a category above.</div></div></div>`;
+  return head+`<div class="mgrid">${list.map(ecard).join("")}</div>`;
+}
+function viewEquipment(){
+  return `
+    <div class="search-wrap">${I("search",18)}<input id="eqSearch" class="search-input" type="search" placeholder="Search equipment - mixer, scaffold, generator…" aria-label="Search equipment" autocomplete="off" oninput="setEqQuery(this.value)" value="${S.eqQuery.replace(/"/g,"&quot;")}"></div>
+    <div class="catfilter" id="eqCatBar">${eqCatBar()}</div>
+    <div id="eqGrid">${eqGridSection()}</div>`;
+}
+function eqPaintGrid(){ const cb=$("eqCatBar"); if(cb)cb.innerHTML=eqCatBar(); const g=$("eqGrid"); if(g)g.innerHTML=eqGridSection(); }
+function setEqCat(g){ S.eqCat=g; S.eqQuery=""; const si=$("eqSearch"); if(si)si.value=""; eqPaintGrid(); }
+function setEqQuery(v){ S.eqQuery=v; eqPaintGrid(); }
+function eqClearSearch(){ S.eqQuery=""; const si=$("eqSearch"); if(si){ si.value=""; si.focus(); } eqPaintGrid(); }
+
+function setDays(n){
+  S.days=Math.max(1,Math.floor(n||1));
+  const e=E(S.detailId); if(!e)return;
+  const di=$("eqDays"); if(di)di.value=S.days;
+  const t=$("eqTotal"); if(t)t.textContent=fmt(e.rate*S.days);
+  const td=$("eqTotalDays"); if(td)td.textContent=`${S.days} day${S.days>1?"s":""}`;
+}
+function bumpDays(d){ setDays((S.days||1)+d); }
+function setStart(v){ S.startDate=v; }
+async function requestEquipment(){
+  const e=E(S.detailId); if(!e)return;
+  if(!S.profile){ _afterProfile=requestEquipment; toast("Add your details so we can confirm"); openProfile(); return; }
+  const payload={ equipmentId:e.id, name:e.name, days:S.days||1, startDate:S.startDate||null, customer:S.profile };
+  // TODO: POST to /api/equipment-requests once the backend exposes it; this is a manual request, no availability engine.
+  try{ await api("/api/equipment-requests",{method:"POST",body:JSON.stringify(payload)}); }catch(err){}
+  toast("Request sent - we'll confirm availability & deposit");
+}
+function viewEquipDetail(){
+  if(S.loading) return viewDetailSkeleton();
+  const e=E(S.detailId);
+  if(!e) return `<a class="back-link" href="${routeHref('/equipment')}" onclick="return navClick(event,'/equipment')">${I("back",16)} All equipment</a>
+    <div class="card"><div class="empty-state"><div class="empty-icon">${I("search",24)}</div><div class="empty-title">Equipment not found</div><div class="empty-sub">This item may no longer be listed. Browse all equipment instead.</div></div></div>`;
+  const img = IMGBAD.has(e.id) ? "" : `<img src="images/${e.id}.jpg" alt="${e.name}" onerror="imgFail('${e.id}',this)">`;
+  const seal = e.verified ? `<span class="seal" role="img" aria-label="Briq-checked">${I("check",13)}</span>` : "";
+  const verified = e.verified ? `<div class="detail-verified">${I("check",14)} Briq-checked, working condition</div>` : "";
+  const days=S.days||1;
+  return `
+  <a class="back-link" href="${routeHref('/equipment')}" onclick="return navClick(event,'/equipment')">${I("back",16)} All equipment</a>
+  <div class="detail">
+    <div class="detail-media">
+      <div class="detail-photo"><span class="pcard-art" aria-hidden="true">${eqArt(e)}</span>${img}${seal}</div>
+    </div>
+    <div class="detail-info">
+      <span class="detail-cat">${e.category}</span>
+      <h1 class="detail-name">${e.name}</h1>
+      <div class="detail-spec">${e.spec}</div>
+      ${verified}
+      <div class="detail-price-row"><b>${fmt(e.rate)}</b><span class="du">/ day</span></div>
+      <div class="rental">
+        <div class="rental-row">
+          <label class="form-label" for="eqDays">How many days?</label>
+          <div class="qstep rental-step" role="group" aria-label="Number of days">
+            <button onclick="bumpDays(-1)" aria-label="One day fewer">${I("minus",16)}</button>
+            <input id="eqDays" value="${days}" inputmode="numeric" aria-label="Number of days" onchange="setDays(parseInt(this.value.replace(/\\D/g,''))||1)">
+            <button onclick="bumpDays(1)" aria-label="One day more">${I("plus",16)}</button>
+          </div>
+        </div>
+        <div class="rental-row">
+          <label class="form-label" for="eqStart">Preferred start date</label>
+          <input id="eqStart" class="pf-input" type="date" value="${S.startDate||""}" aria-label="Preferred start date" onchange="setStart(this.value)" oninput="setStart(this.value)">
+        </div>
+        <div class="rental-total"><span>Estimated total</span><span class="rt-val"><b id="eqTotal">${fmt(e.rate*days)}</b><span class="rt-sub">${fmt(e.rate)} × <span id="eqTotalDays">${days} day${days>1?"s":""}</span></span></span></div>
+      </div>
+      <button class="btn btn-green btn-block" onclick="requestEquipment()">Request this equipment</button>
+      <p class="detail-fineprint">A refundable deposit may apply, confirmed on booking.</p>
+      <div class="guarantee">${I("shield",15)}<span><strong>Working-condition guarantee.</strong> Every unit is Briq-checked before it leaves; if it fails on site we swap it.</span></div>
+      <div class="detail-note">${I("truck",15)} Delivered to your site or picked up - your choice, confirmed on booking.</div>
+    </div>
+  </div>`;
+}
+
+/* ── PROFESSIONALS (people twin of Products) ── */
+function proArt(){ return `<svg class="art-svg eq-art" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="4"/><path d="M4.5 20.5c0-4.2 3.4-7.5 7.5-7.5s7.5 3.3 7.5 7.5"/></svg>`; }
+function procard(p){
+  const img = IMGBAD.has("pro-"+p.id) ? "" : `<img src="images/pros/${p.id}.jpg" alt="${p.name}" loading="lazy" onerror="imgFail('pro-${p.id}',this)">`;
+  const seal = p.verified ? `<span class="seal" role="img" aria-label="Verified by Briq" title="Verified by Briq">${I("check",13)}</span>` : "";
+  return `<a class="pcard procard" href="${routeHref('/professionals/'+p.id)}" onclick="return navClick(event,'/professionals/${p.id}')" aria-label="${p.name}, ${p.discipline}, ${p.region}">
+    <div class="pcard-img"><span class="pcard-art" aria-hidden="true">${proArt()}</span>${img}<span class="pcard-cat">${p.region}</span>${seal}</div>
+    <div class="pcard-body">
+      <div class="pcard-name">${p.name}</div>
+      <div class="pcard-spec">${p.discipline}</div>
+      <div class="pcard-save">${p.years} yrs experience</div>
+    </div>
+  </a>`;
+}
+function proCatBar(){
+  const searching=S.proQuery.trim().length>0;
+  const allOn=!searching && S.proCat==="all";
+  let out=`<button class="cft ${allOn?"on":""}"${allOn?' aria-current="true"':""} onclick="setProCat('all')">All</button>`;
+  out+=PROGROUPS.map(g=>{
+    const on=!searching && S.proCat===g;
+    return `<button class="cft ${on?"on":""}"${on?' aria-current="true"':""} onclick="setProCat('${g}')">${g}</button>`;
+  }).join("");
+  return out;
+}
+function proMatFor(){
+  const q=S.proQuery.trim().toLowerCase();
+  if(q) return S.pros.filter(p=>(p.name+" "+p.discipline+" "+p.region+" "+p.specialisation).toLowerCase().includes(q));
+  if(S.proCat==="all") return S.pros;
+  return S.pros.filter(p=>p.discipline===S.proCat);
+}
+// Display order for the grouped "All" view (launch ordering, easy to change).
+const PRO_ORDER = ["Architect", "Structural Engineer", "Mason"];
+function proGroupBlock(d){
+  const list=S.pros.filter(p=>p.discipline===d);
+  if(!list.length) return "";
+  return `<section class="pro-group"><div class="grid-head"><h2 class="card-title">${d}s</h2><span class="grid-count">${list.length} ${list.length===1?"person":"people"}</span></div><div class="mgrid">${list.map(procard).join("")}</div></section>`;
+}
+function proGridSection(){
+  const searching=S.proQuery.trim().length>0;
+  if(searching){
+    const list=proMatFor();
+    const head=`<div class="grid-head"><h2 class="card-title">Results</h2><button class="link-btn" onclick="proClearSearch()">Clear search</button></div>`;
+    if(!list.length) return head+`<div class="card"><div class="empty-state"><div class="empty-icon">${I("search",24)}</div><div class="empty-title">No professionals match “${S.proQuery.trim()}”</div><div class="empty-sub">Try another term, or pick a discipline above.</div></div></div>`;
+    return head+`<div class="mgrid">${list.map(procard).join("")}</div>`;
+  }
+  if(S.proCat!=="all"){
+    const list=S.pros.filter(p=>p.discipline===S.proCat);
+    const head=`<div class="grid-head"><h2 class="card-title">${S.proCat}s</h2><span class="grid-count">${list.length} ${list.length===1?"person":"people"}</span></div>`;
+    if(!list.length) return head+`<div class="card"><div class="empty-state"><div class="empty-icon">${I("people",24)}</div><div class="empty-title">No ${S.proCat.toLowerCase()}s yet</div><div class="empty-sub">We're vetting more. Check back soon.</div></div></div>`;
+    return head+`<div class="mgrid">${list.map(procard).join("")}</div>`;
+  }
+  // "All": grouped by discipline, in display order, only sections that have people.
+  const extras=[...new Set(S.pros.map(p=>p.discipline))].filter(d=>!PRO_ORDER.includes(d));
+  const blocks=[...PRO_ORDER, ...extras].map(proGroupBlock).filter(Boolean);
+  if(!blocks.length) return `<div class="card"><div class="empty-state"><div class="empty-icon">${I("people",24)}</div><div class="empty-title">No professionals yet</div><div class="empty-sub">We're vetting the first cohort now.</div></div></div>`;
+  return blocks.join("");
+}
+function viewPros(){
+  return `
+    <div class="search-wrap">${I("search",18)}<input id="proSearch" class="search-input" type="search" placeholder="Search professionals - name, discipline, region…" aria-label="Search professionals" autocomplete="off" oninput="setProQuery(this.value)" value="${S.proQuery.replace(/"/g,"&quot;")}"></div>
+    <div class="catfilter" id="proCatBar">${proCatBar()}</div>
+    <div id="proGrid">${proGridSection()}</div>`;
+}
+function proPaintGrid(){ const cb=$("proCatBar"); if(cb)cb.innerHTML=proCatBar(); const g=$("proGrid"); if(g)g.innerHTML=proGridSection(); }
+function setProCat(g){ S.proCat=g; S.proQuery=""; const si=$("proSearch"); if(si)si.value=""; proPaintGrid(); }
+function setProQuery(v){ S.proQuery=v; proPaintGrid(); }
+function proClearSearch(){ S.proQuery=""; const si=$("proSearch"); if(si){ si.value=""; si.focus(); } proPaintGrid(); }
+function viewProDetail(){
+  if(S.loading) return viewDetailSkeleton();
+  const p=P(S.detailId);
+  if(!p) return `<a class="back-link" href="${routeHref('/professionals')}" onclick="return navClick(event,'/professionals')">${I("back",16)} All professionals</a>
+    <div class="card"><div class="empty-state"><div class="empty-icon">${I("search",24)}</div><div class="empty-title">Professional not found</div><div class="empty-sub">This profile may no longer be listed. Browse all professionals instead.</div></div></div>`;
+  const img = IMGBAD.has("pro-"+p.id) ? "" : `<img src="images/pros/${p.id}.jpg" alt="${p.name}" onerror="imgFail('pro-${p.id}',this)">`;
+  const seal = p.verified ? `<span class="seal" role="img" aria-label="Verified by Briq">${I("check",13)}</span>` : "";
+  const verified = p.verified ? `<div class="detail-verified">${I("check",14)} Registration checked & work reviewed by Briq</div>` : "";
+  const folio = (p.portfolio&&p.portfolio.length) ? `<h2 class="card-title" style="margin:24px 2px 12px">Portfolio</h2><div class="portfolio">${p.portfolio.map((src,i)=>`<div class="folio"><span class="folio-ph" aria-hidden="true">${I("box",20)}</span><img src="images/pros/${src}.jpg" alt="${p.name} project ${i+1}" loading="lazy" onerror="this.remove()"></div>`).join("")}</div>` : "";
+  return `
+  <a class="back-link" href="${routeHref('/professionals')}" onclick="return navClick(event,'/professionals')">${I("back",16)} All professionals</a>
+  <div class="detail">
+    <div class="detail-media">
+      <div class="detail-photo portrait"><span class="pcard-art" aria-hidden="true">${proArt()}</span>${img}${seal}</div>
+    </div>
+    <div class="detail-info">
+      <span class="detail-cat">${p.discipline}</span>
+      <h1 class="detail-name">${p.name}</h1>
+      <div class="detail-spec">${p.region} · ${p.years} years experience</div>
+      ${verified}
+      ${p.bio?`<p class="pro-bio">${p.bio}</p>`:""}
+      <div class="creds">
+        <div class="cred"><span>Registration</span><span>${p.registration||"-"}</span></div>
+        <div class="cred"><span>Specialisation</span><span>${p.specialisation||"-"}</span></div>
+        <div class="cred"><span>Experience</span><span>${p.years} years</span></div>
+        <div class="cred"><span>Regions covered</span><span>${p.region}</span></div>
+      </div>
+      <button class="btn btn-green btn-block" onclick="openProReq('${p.id}')">Request this professional</button>
+      <div class="detail-note">${I("shield",15)} Briq verifies and connects you with this professional. They carry their own professional registration and responsibility for the work.</div>
+    </div>
+  </div>
+  ${folio}`;
+}
+function renderProReq(){
+  const p=P(S.reqProId)||{}, prof=S.profile||{}, esc=v=>String(v||"").replace(/"/g,"&quot;");
+  const sel=(id,label,opts)=>`<div class="pfield"><label class="form-label" for="${id}">${label}</label><select id="${id}" class="pf-input">${opts.map(o=>`<option>${o}</option>`).join("")}</select></div>`;
+  $("proReqCard").innerHTML = `<div class="modal-head"><div class="modal-title" id="proReqTitle">Request ${p.name||"professional"}</div><button class="modal-close" onclick="closeProReq()" aria-label="Close">×</button></div>
+    <div class="modal-body">
+      <p class="req-intro">Tell Briq about your project and we'll connect you with ${p.name||"this professional"}.</p>
+      <div class="pfield"><label class="form-label" for="rqName">Your name</label><input id="rqName" class="pf-input" value="${esc(prof.name)}" placeholder="e.g. Isaac Ntegeka"></div>
+      <div class="pfield"><label class="form-label" for="rqPhone">Phone</label><input id="rqPhone" class="pf-input" inputmode="tel" value="${esc(prof.phone)}" placeholder="e.g. 0772 123 456"></div>
+      ${sel("rqNeed","What do you need?",["Full structural design","Review existing drawings","Site visit & advice","Not sure yet"])}
+      ${sel("rqType","Project type",["New build","Renovation","Extension","Boundary wall","Other"])}
+      <div class="pfield"><label class="form-label" for="rqLoc">Project location</label><input id="rqLoc" class="pf-input" value="${esc(prof.town)}" placeholder="e.g. Wanyange, Jinja"></div>
+      <div class="pfield"><label class="form-label" for="rqPlot">Plot size</label><input id="rqPlot" class="pf-input" placeholder="e.g. 50 × 100 ft"></div>
+      ${sel("rqStage","Project stage",["Planning","Foundation","Walling","Roofing","Finishing"])}
+      ${sel("rqBudget","Budget range (UGX)",["Under 50M","50M - 150M","150M - 500M","500M+","Not sure"])}
+      <button class="btn btn-green btn-block" style="margin-top:8px" onclick="submitProReq()">Send request</button>
+      <p class="req-fine">Briq verifies and connects you with this professional. They carry their own professional registration and responsibility for the work.</p>
+    </div>`;
+}
+function openProReq(id){ S.reqProId=id; closeSidebar(); _lastFocus=document.activeElement; renderProReq(); $("proReqModal").classList.add("open"); document.addEventListener("keydown",proReqKey); setTimeout(()=>{ const f=$("proReqCard").querySelector("input"); if(f)f.focus(); },60); }
+function closeProReq(){ $("proReqModal").classList.remove("open"); document.removeEventListener("keydown",proReqKey); if(_lastFocus&&_lastFocus.focus)_lastFocus.focus(); }
+function proReqKey(e){
+  if(e.key==="Escape"){ closeProReq(); return; }
+  if(e.key!=="Tab")return;
+  const f=$("proReqCard").querySelectorAll('button,input,select,[href]'); if(!f.length)return;
+  const a=f[0], b=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===a){ e.preventDefault(); b.focus(); }
+  else if(!e.shiftKey&&document.activeElement===b){ e.preventDefault(); a.focus(); }
+}
+async function submitProReq(){
+  const p=P(S.reqProId); if(!p)return;
+  const name=$("rqName").value.trim(), phone=$("rqPhone").value.trim();
+  if(!name||!phone){ toast("Add your name and phone"); ($("rqName").value.trim()?$("rqPhone"):$("rqName")).focus(); return; }
+  if(!S.profile){ S.profile={name,phone,role:"",town:$("rqLoc").value.trim()}; saveProfileObj(S.profile); }
+  const payload={ proId:p.id, proName:p.name, name, phone, brief:{ need:$("rqNeed").value, type:$("rqType").value, location:$("rqLoc").value.trim(), plot:$("rqPlot").value.trim(), stage:$("rqStage").value, budget:$("rqBudget").value } };
+  // TODO: POST to /api/pro-requests once the backend exposes it; this is a lead Briq fulfils manually.
+  try{ await api("/api/pro-requests",{method:"POST",body:JSON.stringify(payload)}); }catch(err){}
+  closeProReq(); renderChrome(); toast(`Briq will connect you with ${p.name} shortly`);
+}
+
 function viewOrders(){
   if(S.loading) return `<div class="empty-state"><div class="empty-icon">${I("receipt",24)}</div><div class="empty-title">Loading…</div></div>`;
   if(!S.orders.length) return `<div class="card"><div class="empty-state"><div class="empty-icon">${I("receipt",24)}</div><div class="empty-title">No orders yet</div><div class="empty-sub">Place your first order and it'll show here, ready to track and reorder in a tap.</div></div></div>`;
@@ -487,7 +762,7 @@ function renderModal(){
       <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:12px">No deposit · pay on delivery</p></div>`;
 }
 
-Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,imgFail,navigate,navClick,openProduct,openProfile,closeProfile,saveProfile,S});
+Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,imgFail,navigate,navClick,openProduct,openProfile,closeProfile,saveProfile,setEqCat,setEqQuery,eqClearSearch,bumpDays,setDays,setStart,requestEquipment,setProCat,setProQuery,proClearSearch,openProReq,closeProReq,submitProReq,S});
 window.addEventListener("popstate",route);
 window.addEventListener("hashchange",()=>{ if(FILE) route(); });
 route();

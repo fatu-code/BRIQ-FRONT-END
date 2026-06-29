@@ -31,8 +31,10 @@
     </div>
     <button class="sb-user" id="sbUser" onclick="openProfile()" aria-label="Your profile"></button>
     <nav class="sb-nav" id="sbNav"></nav>
-    <div class="sidebar-panel" id="projPanel"></div>
-    <div class="sb-bottom"><div class="sb-bottom-text"><strong>Engineer-verified</strong> materials, sourced, checked and delivered to your site.</div></div>
+    <div class="sb-bottom">
+      <span class="sb-verify-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+      <div><div class="sb-verify-h">Engineer-verified</div><div class="sb-verify-p">Materials, equipment &amp; professionals, vetted by Briq.</div></div>
+    </div>
   </aside>
   <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
 
@@ -63,6 +65,9 @@
 
 <!-- PROFILE MODAL -->
 <div class="modal-bg" id="profileModal" onclick="if(event.target===this)closeProfile()"><div class="modal-card" id="profileCard" role="dialog" aria-modal="true" aria-labelledby="profileTitle"></div></div>
+
+<!-- PROFESSIONAL REQUEST MODAL -->
+<div class="modal-bg" id="proReqModal" onclick="if(event.target===this)closeProReq()"><div class="modal-card" id="proReqCard" role="dialog" aria-modal="true" aria-labelledby="proReqTitle"></div></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
