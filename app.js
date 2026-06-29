@@ -74,7 +74,7 @@ function initials(name){ const p=String(name||"").trim().split(/\s+/); return ((
 
 /* ── ROUTER (client-side, deep-linkable) ── */
 const FILE = location.protocol === "file:";
-const VIEW_PATH = { materials:"/products", orders:"/orders", why:"/why" };
+const VIEW_PATH = { materials:"/products", equipment:"/equipment", orders:"/orders", why:"/why" };
 function currentPath(){
   if(FILE) return (location.hash || "").replace(/^#/,"") || "/products";
   return location.pathname.replace(/\/index\.html$/,"") || "/products";
@@ -88,8 +88,11 @@ function navClick(e,path){ if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.butt
 function openProduct(id){ navigate("/products/"+encodeURIComponent(id)); }
 function route(){
   const path=currentPath();
-  const m=path.match(/^\/products\/(.+)$/);
-  if(m){ S.view="detail"; S.detailId=decodeURIComponent(m[1]); }
+  const pm=path.match(/^\/products\/(.+)$/);
+  const em=path.match(/^\/equipment\/(.+)$/);
+  if(pm){ S.view="detail"; S.detailId=decodeURIComponent(pm[1]); }
+  else if(em){ S.view="eqdetail"; S.detailId=decodeURIComponent(em[1]); S.days=1; S.startDate=""; }
+  else if(path==="/equipment") S.view="equipment";
   else if(path==="/orders") S.view="orders";
   else if(path==="/why") S.view="why";
   else S.view="materials";
@@ -102,6 +105,7 @@ function route(){
 const fmt = (n) => "UGX " + Math.round(n).toLocaleString("en-UG");
 const sh = (n) => Math.round(n).toLocaleString("en-UG");
 const M = (id) => S.materials.find((m) => m.id === id);
+const E = (id) => S.equipment.find((e) => e.id === id);
 const $ = (id) => document.getElementById(id);
 
 async function api(path, opts = {}) {
@@ -243,9 +247,11 @@ window.addEventListener("offline",()=>{ S.offline=true; toast("You're offline - 
 
 /* ── RENDER ── */
 function renderChrome(){
-  const av = S.view==="detail" ? "materials" : S.view;
+  const av = S.view==="detail" ? "materials" : (S.view==="eqdetail" ? "equipment" : S.view);
   // topbar
-  const pageTitle = S.view==="detail" ? ((M(S.detailId)||{}).name || "Product") : VIEWS[S.view].title;
+  const pageTitle = S.view==="detail" ? ((M(S.detailId)||{}).name || "Product")
+    : S.view==="eqdetail" ? ((E(S.detailId)||{}).name || "Equipment")
+    : VIEWS[S.view].title;
   $("tbTitle").textContent = pageTitle;
   document.title = pageTitle + " · Briq";
   $("tbSub").textContent = S.offline ? "Briq · Jinja · sample data" : "Briq · Jinja";
@@ -285,9 +291,11 @@ function render(){
   // content
   const c=$("content");
   c.setAttribute("aria-busy", S.loading?"true":"false");
-  if(S.loading && (S.view==="materials"||S.view==="detail")) c.innerHTML = S.view==="detail" ? viewDetailSkeleton() : viewSkeleton();
+  if(S.loading && ["materials","detail","equipment","eqdetail"].includes(S.view)) c.innerHTML = (S.view==="detail"||S.view==="eqdetail") ? viewDetailSkeleton() : viewSkeleton();
   else if(S.view==="materials") c.innerHTML=viewMaterials();
   else if(S.view==="detail") c.innerHTML=viewDetail();
+  else if(S.view==="equipment") c.innerHTML=viewEquipment();
+  else if(S.view==="eqdetail") c.innerHTML=viewEquipDetail();
   else if(S.view==="orders") c.innerHTML=viewOrders();
   else c.innerHTML=viewWhy();
 }
