@@ -368,7 +368,6 @@ function pcard(m){
       <div class="pcard-name">${m.name}</div>
       <div class="pcard-spec">${m.spec}</div>
       <div class="pcard-price"><b>${fmt(m.brik)}</b><span class="pcard-unit">/ ${m.unit}</span><s>${sh(m.retail)}</s></div>
-      <div class="pcard-save">${I("tag",11)} Save ${sh(m.save)} vs retail</div>
     </div>
   </a>`;
 }

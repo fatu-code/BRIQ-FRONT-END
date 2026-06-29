@@ -2450,8 +2450,18 @@ select.pf-input {
   .pcard-body {
     padding: 12px;
   }
+  .pcard-price {
+    gap: 6px;
+    margin-top: 8px;
+  }
   .pcard-price b {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
+  }
+  .pcard-unit {
+    font-size: 0.66rem;
+  }
+  .pcard-price s {
+    font-size: 0.74rem;
   }
   .modal-bg {
     align-items: flex-end;
