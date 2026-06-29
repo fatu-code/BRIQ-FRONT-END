@@ -47,6 +47,12 @@ const IMGBAD = new Set();
 function imgFail(id,el){ IMGBAD.add(id); if(el)el.remove(); }
 function pulse(el){ if(!el)return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
 
+/* ── CUSTOMER PROFILE (phase 1: on-device, attaches to orders) ── */
+S.profile = (function(){ try{ return JSON.parse(localStorage.getItem("briq-profile")||"null"); }catch(e){ return null; } })();
+let _afterProfile=null;
+function saveProfileObj(p){ try{ localStorage.setItem("briq-profile",JSON.stringify(p)); }catch(e){} }
+function initials(name){ const p=String(name||"").trim().split(/\s+/); return (((p[0]||"")[0]||"")+((p[1]||"")[0]||"")).toUpperCase()||"?"; }
+
 /* ── ROUTER (client-side, deep-linkable) ── */
 const FILE = location.protocol === "file:";
 const VIEW_PATH = { materials:"/products", orders:"/orders", why:"/why" };
@@ -102,6 +108,7 @@ function I(name, s = 16) {
     search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
     tag:'<path d="M4 12V5a1 1 0 011-1h7l8 8-8 8z"/><circle cx="8.5" cy="8.5" r="1.3"/>',
     back:'<path d="M19 12H5M11 18l-6-6 6-6"/>',
+    user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" aria-hidden="true" focusable="false">${P[name]||""}</svg>`;
 }
@@ -142,6 +149,38 @@ function modalKey(e){
 }
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2400); }
 
+function renderProfile(){
+  const p=S.profile||{}, esc=v=>String(v||"").replace(/"/g,"&quot;");
+  const roles=["Contractor","Engineer","Builder","Homeowner","Supplier"];
+  $("profileCard").innerHTML = `<div class="modal-head"><div class="modal-title" id="profileTitle">Your details</div><button class="modal-close" onclick="closeProfile()" aria-label="Close">×</button></div>
+    <div class="modal-body">
+      <div class="pfield"><label class="form-label" for="pfName">Full name</label><input id="pfName" class="pf-input" value="${esc(p.name)}" placeholder="e.g. Isaac Ntegeka"></div>
+      <div class="pfield"><label class="form-label" for="pfPhone">Phone</label><input id="pfPhone" class="pf-input" inputmode="tel" value="${esc(p.phone)}" placeholder="e.g. 0772 123 456"></div>
+      <div class="pfield"><label class="form-label" for="pfRole">You are a</label><select id="pfRole" class="pf-input">${roles.map(r=>`<option ${p.role===r?"selected":""}>${r}</option>`).join("")}</select></div>
+      <div class="pfield"><label class="form-label" for="pfTown">Town / site</label><input id="pfTown" class="pf-input" value="${esc(p.town)}" placeholder="e.g. Jinja"></div>
+      <button class="btn btn-green btn-block" style="margin-top:8px" onclick="saveProfile()">Save details</button>
+      <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:10px">Stored on your device, used to deliver your orders.</p>
+    </div>`;
+}
+function openProfile(){ closeSidebar(); _lastFocus=document.activeElement; renderProfile(); $("profileModal").classList.add("open"); document.addEventListener("keydown",profileKey); setTimeout(()=>{ const f=$("profileCard").querySelector("input"); if(f)f.focus(); },60); }
+function closeProfile(){ $("profileModal").classList.remove("open"); document.removeEventListener("keydown",profileKey); if(_lastFocus&&_lastFocus.focus)_lastFocus.focus(); }
+function profileKey(e){
+  if(e.key==="Escape"){ closeProfile(); return; }
+  if(e.key!=="Tab")return;
+  const f=$("profileCard").querySelectorAll('button,input,select,[href]'); if(!f.length)return;
+  const a=f[0], b=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===a){ e.preventDefault(); b.focus(); }
+  else if(!e.shiftKey&&document.activeElement===b){ e.preventDefault(); a.focus(); }
+}
+function saveProfile(){
+  const name=$("pfName").value.trim();
+  if(!name){ toast("Please add your name"); $("pfName").focus(); return; }
+  S.profile={ name, phone:$("pfPhone").value.trim(), role:$("pfRole").value, town:$("pfTown").value.trim() };
+  saveProfileObj(S.profile);
+  closeProfile(); renderChrome(); toast("Profile saved");
+  if(_afterProfile){ const fn=_afterProfile; _afterProfile=null; fn(); }
+}
+
 async function createProject(){
   const name=$("npName").value.trim(), site=$("npSite").value.trim();
   if(!name)return;
@@ -151,14 +190,15 @@ async function createProject(){
 }
 async function placeOrder(){
   const items=lines().map(l=>({id:l.id,qty:l.qty})); if(!items.length)return;
+  if(!S.profile){ closeReview(); _afterProfile=placeOrder; toast("Add your details so we can deliver"); openProfile(); return; }
   try{
     if(S.offline){
       S.orders.unshift({ id:"BRK-"+Date.now().toString().slice(-6), total:grand(), save:saveTot(), slot:S.slot, statusIdx:1,
         date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short"}),
-        project:(S.projects.find(p=>p.id===S.active)||{}).name||"No project", site:"",
+        project:(S.projects.find(p=>p.id===S.active)||{}).name||S.profile.name, site:S.profile.town||"",
         items:lines().map(l=>({name:l.name,qty:l.qty,unit:l.unit})) });
     } else {
-      await api("/api/orders",{method:"POST",body:JSON.stringify({projectId:S.active||null,slot:S.slot,items})});
+      await api("/api/orders",{method:"POST",body:JSON.stringify({projectId:S.active||null,slot:S.slot,items,customer:S.profile})});
       await loadOrders();
     }
     S.cart={}; closeReview(); toast("Order placed · we'll confirm your slot"); go("orders");
@@ -189,6 +229,11 @@ function renderChrome(){
   $("tbTitle").textContent = pageTitle;
   document.title = pageTitle + " · Briq";
   $("tbSub").textContent = S.offline ? "Briq · Jinja · sample data" : "Briq · Jinja";
+  // sidebar identity block
+  const pr=S.profile;
+  $("sbUser").innerHTML = pr
+    ? `<span class="sb-avatar">${initials(pr.name)}</span><span class="sb-user-txt"><span class="sb-user-name">${pr.name}</span><span class="sb-user-role">${[pr.role,pr.town].filter(Boolean).join(" · ")||"Briq customer"}</span></span>`
+    : `<span class="sb-avatar sb-avatar-empty">${I("user",16)}</span><span class="sb-user-txt"><span class="sb-user-name">Set up your profile</span><span class="sb-user-role">Name, phone &amp; site</span></span>`;
   // cart top button (desktop)
   const ct=$("cartTop");
   if(count()>0){ ct.style.display="inline-flex"; ct.setAttribute("aria-label",`Review order, ${count()} item${count()>1?"s":""}, total ${fmt(grand())}`); ct.innerHTML=`${I("cart",14)} ${fmt(grand())} · ${count()}`; }
@@ -411,7 +456,7 @@ function renderModal(){
       <p style="text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);margin-top:12px">No deposit · pay on delivery</p></div>`;
 }
 
-Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,imgFail,navigate,navClick,openProduct,S});
+Object.assign(window,{go,bump,setQty,addPack,toggleAdd,createProject,openReview,closeReview,setSlot,placeOrder,reorder,openSidebar,closeSidebar,setCat,setQuery,clearSearch,imgFail,navigate,navClick,openProduct,openProfile,closeProfile,saveProfile,S});
 window.addEventListener("popstate",route);
 window.addEventListener("hashchange",()=>{ if(FILE) route(); });
 route();
