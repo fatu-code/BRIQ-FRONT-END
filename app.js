@@ -8,9 +8,11 @@ const ACC = { Cement: "amber", Steel: "blue", Blocks: "green", Aggregates: "viol
 const GICON = { Cement: "cement", Steel: "steel", Blocks: "block", Aggregates: "aggregate", Roofing: "roof" };
 const VIEWS = {
   materials: { title: "Products", icon: "grid" },
+  equipment: { title: "Equipment", icon: "wrench" },
   orders: { title: "My orders", icon: "receipt" },
   why: { title: "Why Briq", icon: "shield" },
 };
+const EQGROUPS = ["Mixing", "Compaction", "Access", "Power", "Hand tools"];
 
 const FB = [
   ["cem-hima","Cement - Hima","50kg · OPC 42.5N","Cement","bag",38000,44000,1],
@@ -32,6 +34,23 @@ const FB = [
   const brik = Math.round(supplier*(1+FEE));
   return { id,name,spec,group,unit,supplier,retail,verified:!!v,brik,fee:Math.round(supplier*FEE),save:retail-brik };
 });
+// TODO: fetch from /api/equipment once the backend exposes it. Shape mirrors materials.
+const EQUIP = [
+  ["mixer-350","Concrete mixer 350L","Diesel · tip drum","Mixing",80000,1],
+  ["mixer-electric","Concrete mixer (electric)","240L · single phase","Mixing",60000,1],
+  ["poker-45","Poker vibrator","45mm · petrol drive","Compaction",45000,1],
+  ["plate-compactor","Plate compactor","90kg · reversible","Compaction",70000,1],
+  ["rammer","Rammer (jumping jack)","Trench compaction","Compaction",65000,0],
+  ["scaffold-set","Scaffold set","2m frame + braces · per set","Access",25000,1],
+  ["ladder-ext","Extension ladder","6m aluminium","Access",15000,1],
+  ["acrow-props","Acrow props","Adjustable · per 10","Access",18000,0],
+  ["gen-5kva","Generator 5kVA","Petrol · key start","Power",90000,1],
+  ["gen-15kva","Generator 15kVA","Diesel · 3-phase","Power",180000,1],
+  ["breaker","Demolition breaker","1500W · hex chisel","Power",55000,1],
+  ["drill-hammer","Hammer drill","SDS · 850W","Hand tools",20000,1],
+  ["angle-grinder","Angle grinder","230mm · heavy duty","Hand tools",15000,0],
+  ["laser-level","Laser level","Self-levelling · tripod","Hand tools",30000,1],
+].map(([id,name,spec,category,rate,v]) => ({ id,name,spec,category,unit:"day",rate,verified:!!v }));
 const FB_PACKS = [
   { id:"foundation", name:"Foundation", note:"Strip footing", items:{ "cem-hima":20, hardcore:6, ballast:4, "sand-river":4, "bar-y12":15, wire:3 } },
   { id:"slab", name:"Slab", note:"Suspended floor", items:{ "cem-hima":25, ballast:5, "sand-river":4, "bar-y12":20, brc:8, wire:4 } },
@@ -42,7 +61,7 @@ const FB_PACKS = [
 let clientId = localStorage.getItem("briq-client");
 if (!clientId) { clientId = "c" + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("briq-client", clientId); }
 
-const S = { view:"materials", cart:{}, materials:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:"all", query:"", _lc:0 };
+const S = { view:"materials", cart:{}, materials:[], equipment:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:"all", query:"", eqCat:"all", eqQuery:"", days:1, startDate:"", _lc:0 };
 const IMGBAD = new Set();
 function imgFail(id,el){ IMGBAD.add(id); if(el)el.remove(); }
 function pulse(el){ if(!el)return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
@@ -109,6 +128,7 @@ function I(name, s = 16) {
     tag:'<path d="M4 12V5a1 1 0 011-1h7l8 8-8 8z"/><circle cx="8.5" cy="8.5" r="1.3"/>',
     back:'<path d="M19 12H5M11 18l-6-6 6-6"/>',
     user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+    wrench:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.1-3.1a6 6 0 01-7.9 7.9l-6.2 6.2a2.1 2.1 0 01-3-3l6.2-6.2a6 6 0 017.9-7.9z"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" aria-hidden="true" focusable="false">${P[name]||""}</svg>`;
 }
