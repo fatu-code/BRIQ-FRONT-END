@@ -1,5 +1,5 @@
 /* ── BRIQ - construction materials · responsive web app ── */
-@font-face{font-family:"TAN Paradiso";src:url("fonts/TAN-PARADISO.ttf") format("truetype");font-display:swap}
+@font-face{font-family:"TAN Paradiso";src:url("Fonts/TAN-PARADISO.ttf") format("truetype");font-display:swap}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#0A0F0C;--forest:#004D1E;--green:#009C41;--mint:#C7EFD6;

@@ -7,7 +7,7 @@ const GROUPS = ["Cement", "Steel", "Blocks", "Aggregates", "Roofing"];
 const ACC = { Cement: "amber", Steel: "blue", Blocks: "green", Aggregates: "violet", Roofing: "pink" };
 const GICON = { Cement: "cement", Steel: "steel", Blocks: "block", Aggregates: "aggregate", Roofing: "roof" };
 const VIEWS = {
-  materials: { title: "Order materials", icon: "grid" },
+  materials: { title: "Products", icon: "grid" },
   orders: { title: "My orders", icon: "receipt" },
   why: { title: "Why Briq", icon: "shield" },
 };
