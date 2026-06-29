@@ -9,16 +9,14 @@ const GICON = { Cement: "cement", Steel: "steel", Blocks: "block", Aggregates: "
 const VIEWS = {
   materials: { title: "Products", icon: "grid" },
   equipment: { title: "Equipment", icon: "wrench" },
-  professionals: { title: "Professionals", icon: "people" },
   orders: { title: "My orders", icon: "receipt" },
   requests: { title: "My requests", icon: "clipboard" },
   why: { title: "Why Briq", icon: "shield" },
 };
-// Sidebar groups: BROWSE (the three layers) + ACTIVITY (your own history).
-const NAV = ["materials", "equipment", "professionals"];
+// Sidebar groups: BROWSE (the two layers) + ACTIVITY (your own history).
+const NAV = ["materials", "equipment"];
 const NAV2 = ["orders", "requests"];
 const EQGROUPS = ["Mixing", "Compaction", "Access", "Power", "Hand tools"];
-const PROGROUPS = ["Structural Engineer", "Architect", "Mason"];
 
 const FB = [
   ["cem-hima","Cement - Hima","50kg · OPC 42.5N","Cement","bag",38000,44000,1],
@@ -80,7 +78,7 @@ const FB_PACKS = [
 let clientId = localStorage.getItem("briq-client");
 if (!clientId) { clientId = "c" + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("briq-client", clientId); }
 
-const S = { view:"materials", cart:{}, materials:[], equipment:[], pros:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:"all", query:"", eqCat:"all", eqQuery:"", days:1, startDate:"", proCat:"all", proQuery:"", reqProId:"", _lc:0 };
+const S = { view:"materials", cart:{}, materials:[], equipment:[], packs:[], projects:[], active:"", orders:[], slot:SLOTS[0], loading:true, offline:false, adding:false, cat:"all", query:"", eqCat:"all", eqQuery:"", days:1, startDate:"", _lc:0 };
 const IMGBAD = new Set();
 function imgFail(id,el){ IMGBAD.add(id); if(el)el.remove(); }
 function pulse(el){ if(!el)return; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
@@ -96,7 +94,7 @@ function initials(name){ const p=String(name||"").trim().split(/\s+/); return ((
 
 /* ── ROUTER (client-side, deep-linkable) ── */
 const FILE = location.protocol === "file:";
-const VIEW_PATH = { materials:"/products", equipment:"/equipment", professionals:"/professionals", orders:"/orders", requests:"/requests", why:"/why" };
+const VIEW_PATH = { materials:"/products", equipment:"/equipment", orders:"/orders", requests:"/requests", why:"/why" };
 function currentPath(){
   if(FILE) return (location.hash || "").replace(/^#/,"") || "/products";
   return location.pathname.replace(/\/index\.html$/,"") || "/products";
@@ -132,7 +130,6 @@ const fmt = (n) => "UGX " + Math.round(n).toLocaleString("en-UG");
 const sh = (n) => Math.round(n).toLocaleString("en-UG");
 const M = (id) => S.materials.find((m) => m.id === id);
 const E = (id) => S.equipment.find((e) => e.id === id);
-const P = (id) => S.pros.find((x) => x.id === id);
 const $ = (id) => document.getElementById(id);
 
 async function api(path, opts = {}) {
